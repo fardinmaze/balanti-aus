@@ -1,0 +1,43 @@
+@import "tailwindcss";
+@import "./design-tokens.css";
+
+/* Fraunces + Inter are loaded via <link> in index.html — they match the
+   font-family names the heritage theme already references below, so no
+   override is needed here; the static stacks are the fallback. */
+
+/* Map design tokens into Tailwind's theme so utilities like bg-accent,
+   text-ink, rounded-pill resolve. Do not hard-code values elsewhere —
+   design-tokens.css stays the single source of truth. */
+@theme inline {
+  --color-ink: var(--ink);
+  --color-paper: var(--paper);
+  --color-surface: var(--surface);
+  --color-muted: var(--muted);
+  --color-line: var(--line);
+  --color-accent: var(--accent);
+  --color-accent-contrast: var(--accent-contrast);
+  --color-sale: var(--sale);
+  --color-success: var(--success);
+  --color-focus: var(--focus);
+
+  --font-display: var(--font-display);
+  --font-body: var(--font-body);
+  --font-mono: var(--font-mono);
+
+  --radius-sm: var(--r-sm);
+  --radius-md: var(--r-md);
+  --radius-lg: var(--r-lg);
+  --radius-pill: var(--r-pill);
+}
+
+html,
+body,
+#app {
+  height: 100%;
+}
+
+body {
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+}

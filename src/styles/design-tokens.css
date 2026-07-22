@@ -1,0 +1,227 @@
+/* =========================================================================
+   design-tokens.css — Shoe Brand Website
+   Single source of truth for color, type, space, radius, shadow, motion.
+   Default theme = "modern DTC". Archetype themes swap via [data-theme].
+   Usage: <html data-theme="heritage">  (or athletic | comfort | playful)
+   Do NOT hard-code values in components — reference these variables.
+   ========================================================================= */
+
+:root {
+  /* ---- Color: default (modern DTC) ---- */
+  --ink: #161513;              /* primary text, warm near-black */
+  --paper: #FAF8F5;            /* page background, warm off-white */
+  --surface: #FFFFFF;          /* cards, elevated surfaces */
+  --muted: #6B6862;            /* secondary text, captions */
+  --line: #E5E1DA;             /* hairlines, dividers */
+  --accent: #1A1A1A;           /* THE brand color — replace per brief, use sparingly */
+  --accent-contrast: #FFFFFF;  /* text/icons on accent */
+  --sale: #B4462F;             /* price drops / urgency only */
+  --success: #2E6B4F;          /* in-stock, confirmations */
+  --focus: #2563EB;            /* keyboard focus ring */
+
+  /* ---- Typography ---- */
+  --font-display: "Archivo", "Inter", system-ui, sans-serif;
+  --font-body: "Inter", system-ui, -apple-system, sans-serif;
+  --font-mono: "Space Mono", ui-monospace, monospace; /* prices, style numbers */
+
+  --fs-display: clamp(2.5rem, 6vw, 5.5rem);
+  --fs-h1: clamp(2rem, 4vw, 3.25rem);
+  --fs-h2: clamp(1.5rem, 3vw, 2.25rem);
+  --fs-h3: 1.25rem;
+  --fs-body: 1.0625rem;
+  --fs-small: 0.8125rem;
+
+  --lh-tight: 0.95;   /* display */
+  --lh-snug: 1.2;     /* headings */
+  --lh-body: 1.6;     /* paragraphs */
+  --tracking-tight: -0.02em;
+  --tracking-label: 0.08em; /* uppercase eyebrows/labels */
+
+  /* ---- Spacing (8px base) ---- */
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-5: 24px;
+  --space-6: 32px;
+  --space-7: 48px;
+  --space-8: 64px;
+  --space-9: 96px;
+  --space-10: 128px;
+  --section-y: clamp(64px, 10vw, 128px); /* rhythm between major blocks */
+
+  /* ---- Layout ---- */
+  --content-max: 1280px;
+  --gutter: 56px;
+
+  /* ---- Radius ---- */
+  --r-sm: 6px;
+  --r-md: 12px;
+  --r-lg: 20px;
+  --r-pill: 999px;
+
+  /* ---- Shadow (keep flat; one elevation for cards) ---- */
+  --shadow-card: 0 8px 30px rgba(20, 19, 17, 0.08);
+
+  /* ---- Motion ---- */
+  --dur-fast: 180ms;
+  --dur-mid: 240ms;
+  --dur-reveal: 400ms;
+  --ease: cubic-bezier(0.4, 0, 0.2, 1);
+
+  /* ---- Touch ---- */
+  --tap-min: 44px;
+}
+
+/* =========================================================================
+   ARCHETYPE THEMES — swap palette + type by setting data-theme on <html>.
+   Only override what changes; the rest inherits from :root.
+   ========================================================================= */
+
+/* A. Bold Athletic — Nike / Adidas / Puma lane */
+[data-theme="athletic"] {
+  --paper: #FFFFFF;
+  --ink: #111111;
+  --accent: #E8361C;            /* one hot color, ~5% coverage */
+  --accent-contrast: #FFFFFF;
+  --font-display: "Anton", "Archivo Expanded", sans-serif; /* condensed, ALL CAPS */
+  --font-body: "Inter", system-ui, sans-serif;
+  --r-sm: 2px; --r-md: 6px; --r-lg: 10px;
+  --lh-tight: 0.9;
+  --tracking-tight: -0.01em;
+}
+
+/* B. Comfort Casual — Hush Puppies lane */
+[data-theme="comfort"] {
+  --paper: #F4EFE7;             /* warm cream */
+  --ink: #3A342C;               /* soft brown-black */
+  --muted: #8A8175;
+  --line: #E4DBCC;
+  --accent: #C9A87C;            /* muted tan */
+  --accent-contrast: #2B261F;
+  --font-display: "Fraunces", "Nunito Sans", serif;
+  --font-body: "Nunito Sans", "Mulish", system-ui, sans-serif;
+  --r-sm: 12px; --r-md: 18px; --r-lg: 24px; /* soft, rounded */
+  --shadow-card: 0 10px 34px rgba(58, 52, 44, 0.10);
+}
+
+/* C. Heritage Craft — Blundstone lane, refined for dress/smart-casual (BALANTI) */
+[data-theme="heritage"] {
+  --paper: #FFFFF2;
+  --ink: #1C1A17;
+  --muted: #6A5F52;
+  --line: #D8CDBD;
+  --accent: #8B5A2B;            /* tobacco leather */
+  --accent-contrast: #F7F2EA;
+  --sale: #7A2E1E;
+  --font-display: "Fraunces", "Roslindale", "Bitter", serif;
+  --font-body: "Inter", "Söhne", system-ui, sans-serif;
+  --font-mono: "Space Mono", monospace; /* style numbers: #500, #1911 */
+  /* Pulled slightly softer than the rugged-boot default (2/4/6) — BALANTI sells
+     Oxfords/loafers for the office, not workwear, so a touch more polish reads right. */
+  --r-sm: 4px; --r-md: 8px; --r-lg: 14px;
+  --shadow-card: 0 6px 24px rgba(28, 26, 23, 0.06); /* faint — hairlines still do most of the work */
+}
+
+/* D. Playful Fashion — Rollie lane */
+[data-theme="playful"] {
+  --paper: #FBFAF8;
+  --ink: #1A1A1A;
+  --muted: #726E68;
+  --line: #EAE6E0;
+  --accent: #E4573D;            /* joyful pop; rotate seasonally */
+  --accent-contrast: #FFFFFF;
+  --font-display: "Cabinet Grotesk", "General Sans", system-ui, sans-serif;
+  --font-body: "General Sans", "Inter", system-ui, sans-serif;
+  --r-sm: 10px; --r-md: 16px; --r-lg: 22px;
+}
+
+/* =========================================================================
+   BASE — minimal element defaults wired to the tokens.
+   ========================================================================= */
+
+*, *::before, *::after { box-sizing: border-box; }
+
+html { -webkit-text-size-adjust: 100%; }
+
+body {
+  margin: 0;
+  background: var(--paper);
+  color: var(--ink);
+  font-family: var(--font-body);
+  font-size: var(--fs-body);
+  line-height: var(--lh-body);
+  -webkit-font-smoothing: antialiased;
+}
+
+h1, h2, h3 {
+  font-family: var(--font-display);
+  line-height: var(--lh-snug);
+  letter-spacing: var(--tracking-tight);
+  margin: 0 0 var(--space-4);
+}
+h1 { font-size: var(--fs-h1); }
+h2 { font-size: var(--fs-h2); }
+h3 { font-size: var(--fs-h3); }
+
+.display { font-size: var(--fs-display); line-height: var(--lh-tight); }
+
+.eyebrow {
+  font-size: var(--fs-small);
+  text-transform: uppercase;
+  letter-spacing: var(--tracking-label);
+  color: var(--muted);
+}
+
+.price { font-family: var(--font-mono); }
+
+a { color: inherit; text-decoration: none; }
+
+.container {
+  max-width: var(--content-max);
+  margin-inline: auto;
+  padding-inline: var(--gutter);
+}
+
+section { padding-block: var(--section-y); }
+
+/* Buttons */
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: var(--tap-min);
+  padding: 0 var(--space-6);
+  border-radius: var(--r-pill);
+  font-weight: 600;
+  cursor: pointer;
+  transition: transform var(--dur-fast) var(--ease),
+              background var(--dur-fast) var(--ease),
+              opacity var(--dur-fast) var(--ease);
+}
+.btn-primary { background: var(--accent); color: var(--accent-contrast); border: none; }
+.btn-primary:hover { opacity: 0.9; }
+.btn-ghost { background: transparent; color: var(--ink); border: 1px solid var(--ink); }
+.btn:active { transform: translateY(1px); }
+
+/* Cards */
+.card {
+  background: var(--surface);
+  border-radius: var(--r-md);
+  box-shadow: var(--shadow-card);
+}
+
+/* Accessibility */
+:focus-visible {
+  outline: 2px solid var(--focus);
+  outline-offset: 2px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}

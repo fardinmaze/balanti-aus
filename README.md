@@ -1,36 +1,38 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# BALANTI website
 
-## Getting Started
+Vue 3 + Vite + TypeScript, styled with Tailwind CSS wired to `src/styles/design-tokens.css` (the single source of truth for color/type/space — see `../Design Contexts/CLAUDE.md`).
 
-First, run the development server:
+## Getting started
 
 ```bash
+npm install
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Open http://localhost:5173.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## Structure
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+```
+src/
+  App.vue            root layout: banner, header, <RouterView>, footer, cart drawer
+  main.ts             app entry
+  router/              route table
+  views/                route-level components (Home, Product, About, Support, Cart, Checkout, Confirmation)
+  components/
+    layout/            Header, Footer, UtilityBar, DemoBanner
+    home/               Hero, ProductRail, StoryBlock, Newsletter
+    product/            ProductCard, Gallery, BuyBox
+    cart/               CartDrawer
+    ui/                 BaseButton, Price, PlaceholderImage (primitives, token-driven)
+  content/              copy.ts, nav.ts — real copy, not hard-coded in components
+  lib/                  products.ts (product data), cart.ts (cart store)
+  styles/               design-tokens.css, globals.css (Tailwind + token wiring)
+```
 
-## Learn More
+## Current status (see `../WORKPLAN.md`)
 
-To learn more about Next.js, take a look at the following resources:
-
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
-
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
-
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+- Checkout is a **simulated payment gateway** — no real processor is wired in. `CheckoutView.vue` fakes a network round trip and generates a demo order ID; nothing is charged or transmitted.
+- Product photography doesn't exist yet — `PlaceholderImage.vue` renders an art-directed tone swatch per angle instead of a real photo or stock image.
+- The waitlist form (`Newsletter.vue`) is not wired to a real email service.
+- Before a real launch: pick a payment processor (Stripe/Afterpay), wire a real ESP for the waitlist, replace placeholder imagery, and add Privacy/Terms pages.

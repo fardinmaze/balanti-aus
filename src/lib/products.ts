@@ -1,0 +1,179 @@
+export type Size = { value: string; inStock: boolean };
+
+export type Gender = "men" | "women";
+
+export type Product = {
+  handle: string;
+  name: string;
+  material: string;
+  colorway: string;
+  price: number; // AUD
+  badge?: "New" | "Best Seller";
+  gender: Gender; // demo grouping only, see note below
+  targetCustomer: string;
+  description: string;
+  details: string[];
+  sizes: Size[];
+  tone: string; // placeholder-image tone (hex), until real photography lands
+};
+
+const IN_STOCK_SIZES: Size[] = [
+  { value: "UK 6", inStock: true },
+  { value: "UK 7", inStock: true },
+  { value: "UK 8", inStock: true },
+  { value: "UK 9", inStock: true },
+  { value: "UK 10", inStock: false },
+  { value: "UK 11", inStock: true },
+  { value: "UK 12", inStock: true },
+];
+
+/**
+ * MVP data: hard-coded until the commerce backend (Shopify or otherwise —
+ * see WORKPLAN.md Flag C) is chosen and wired up. Swap this module for a
+ * typed Storefront API client behind the same shape.
+ *
+ * Only Oxford and Loafer are the client's confirmed hero SKUs (see
+ * WORKPLAN.md). The four styles below are demo catalog filler added so the
+ * Women/Men grid reads like a real range instead of two lonely cards —
+ * treat them as placeholders to replace or remove once real product
+ * decisions are made, not as confirmed inventory. `gender` is a demo
+ * grouping for the homepage tabs, not a claim about how the brand will
+ * actually segment its range.
+ */
+export const products: Product[] = [
+  {
+    handle: "balanti-oxford",
+    name: "Balanti Oxford",
+    material: "Full-Grain Leather",
+    colorway: "Espresso",
+    price: 189,
+    badge: "Best Seller",
+    gender: "men",
+    targetCustomer: "Professionals seeking formal business footwear.",
+    description:
+      "A closed-lace Oxford built for the office and everything after it. Full-grain leather upper, cushioned footbed, and a construction meant for daily wear rather than one meeting a week.",
+    details: [
+      "Full-grain leather upper",
+      "Cushioned, all-day comfort footbed",
+      "Leather lining, breathable",
+      "Durable rubber-leather hybrid outsole",
+      "Resoleable construction",
+    ],
+    sizes: IN_STOCK_SIZES,
+    tone: "#3d2b1f",
+  },
+  {
+    handle: "balanti-loafer",
+    name: "Balanti Loafer",
+    material: "Full-Grain Leather",
+    colorway: "Cognac",
+    price: 169,
+    badge: "New",
+    gender: "women",
+    targetCustomer: "Professionals seeking versatile smart-casual footwear.",
+    description:
+      "A slip-on loafer that moves between smart-casual and business without changing its mind. Full-grain leather, a low broken-in feel from day one, and a sole built for pavement, not just carpet.",
+    details: [
+      "Full-grain leather upper",
+      "Slip-on, low break-in period",
+      "Cushioned, all-day comfort footbed",
+      "Durable rubber-leather hybrid outsole",
+      "Resoleable construction",
+    ],
+    sizes: [
+      { value: "UK 6", inStock: true },
+      { value: "UK 7", inStock: true },
+      { value: "UK 8", inStock: true },
+      { value: "UK 9", inStock: false },
+      { value: "UK 10", inStock: true },
+      { value: "UK 11", inStock: true },
+      { value: "UK 12", inStock: false },
+    ],
+    tone: "#8b5a2b",
+  },
+  {
+    handle: "balanti-derby",
+    name: "Balanti Derby",
+    material: "Full-Grain Leather",
+    colorway: "Chestnut",
+    price: 179,
+    badge: "New",
+    gender: "men",
+    targetCustomer: "Professionals who want an open-lace alternative to the Oxford.",
+    description:
+      "An open-lace Derby with a slightly roomier fit than the Oxford — same full-grain leather and construction standard, easier on and off at the end of a long day.",
+    details: [
+      "Full-grain leather upper",
+      "Open-lace, roomier instep",
+      "Cushioned, all-day comfort footbed",
+      "Durable rubber-leather hybrid outsole",
+      "Resoleable construction",
+    ],
+    sizes: IN_STOCK_SIZES,
+    tone: "#5a4130",
+  },
+  {
+    handle: "balanti-monk-strap",
+    name: "Balanti Monk Strap",
+    material: "Full-Grain Leather",
+    colorway: "Black",
+    price: 195,
+    gender: "men",
+    targetCustomer: "Professionals who want a sharper alternative for formal occasions.",
+    description:
+      "A double monk strap for when the Oxford feels too plain and a full lace-up feels like too much. Full-grain leather, buckled not laced, built to the same daily-wear standard.",
+    details: [
+      "Full-grain leather upper",
+      "Twin buckle closure",
+      "Cushioned, all-day comfort footbed",
+      "Durable rubber-leather hybrid outsole",
+      "Resoleable construction",
+    ],
+    sizes: IN_STOCK_SIZES,
+    tone: "#1f1c1a",
+  },
+  {
+    handle: "balanti-chelsea-boot",
+    name: "Balanti Chelsea Boot",
+    material: "Suede",
+    colorway: "Charcoal",
+    price: 199,
+    badge: "New",
+    gender: "women",
+    targetCustomer: "Professionals who want a boot that still works with a suit.",
+    description:
+      "An elastic-sided Chelsea boot in suede, low enough profile to sit under a trouser hem and cut clean enough for the office, not just the weekend.",
+    details: [
+      "Suede upper",
+      "Elastic side panels, pull tab",
+      "Cushioned, all-day comfort footbed",
+      "Durable rubber-leather hybrid outsole",
+      "Resoleable construction",
+    ],
+    sizes: IN_STOCK_SIZES,
+    tone: "#4a4a4a",
+  },
+  {
+    handle: "balanti-ballet-flat",
+    name: "Balanti Ballet Flat",
+    material: "Nubuck",
+    colorway: "Camel",
+    price: 159,
+    gender: "women",
+    targetCustomer: "Professionals who want a flat that still reads formal.",
+    description:
+      "A round-toe ballet flat in nubuck, built with the same full-day construction standard as the rest of the range rather than a soft-sided throwaway.",
+    details: [
+      "Nubuck upper",
+      "Low-profile cushioned footbed",
+      "Flexible rubber-leather hybrid outsole",
+      "Resoleable construction",
+    ],
+    sizes: IN_STOCK_SIZES,
+    tone: "#a67b4f",
+  },
+];
+
+export function getProduct(handle: string): Product | undefined {
+  return products.find((p) => p.handle === handle);
+}
