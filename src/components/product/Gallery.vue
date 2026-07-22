@@ -11,7 +11,19 @@ const active = ref<Angle>("front");
 
 <template>
   <div class="flex flex-col gap-3">
-    <PlaceholderImage :tone="product.tone" :label="product.name" :angle="active" class="aspect-[4/5] w-full rounded-lg" />
+    <img
+      v-if="active === 'front' && product.image"
+      :src="product.image"
+      :alt="`${product.name} — ${product.material}, ${product.colorway}`"
+      class="aspect-[4/5] w-full rounded-lg object-cover"
+    />
+    <PlaceholderImage
+      v-else
+      :tone="product.tone"
+      :label="product.name"
+      :angle="active"
+      class="aspect-[4/5] w-full rounded-lg"
+    />
     <div class="grid grid-cols-4 gap-3">
       <button
         v-for="angle in ANGLES"
@@ -23,7 +35,13 @@ const active = ref<Angle>("front");
         :class="active === angle ? 'border-ink' : 'border-line opacity-70 hover:opacity-100'"
         @click="active = angle"
       >
-        <PlaceholderImage :tone="product.tone" :label="product.name" :angle="angle" class="h-full w-full" />
+        <img
+          v-if="angle === 'front' && product.image"
+          :src="product.image"
+          :alt="`${product.name} — front`"
+          class="h-full w-full object-cover"
+        />
+        <PlaceholderImage v-else :tone="product.tone" :label="product.name" :angle="angle" class="h-full w-full" />
       </button>
     </div>
   </div>

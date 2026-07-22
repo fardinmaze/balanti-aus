@@ -15,6 +15,7 @@ export type Product = {
   details: string[];
   sizes: Size[];
   tone: string; // placeholder-image tone (hex), until real photography lands
+  image?: string; // stock reference photo — closest visual match, not actual product photography
 };
 
 const IN_STOCK_SIZES: Size[] = [
@@ -33,12 +34,12 @@ const IN_STOCK_SIZES: Size[] = [
  * typed Storefront API client behind the same shape.
  *
  * Only Oxford and Loafer are the client's confirmed hero SKUs (see
- * WORKPLAN.md). The four styles below are demo catalog filler added so the
- * Women/Men grid reads like a real range instead of two lonely cards —
- * treat them as placeholders to replace or remove once real product
- * decisions are made, not as confirmed inventory. `gender` is a demo
- * grouping for the homepage tabs, not a claim about how the brand will
- * actually segment its range.
+ * WORKPLAN.md). Every other style below is demo catalog filler added so
+ * the homepage sliders/rails read like a real range instead of two lonely
+ * cards — treat them as placeholders to replace or remove once real
+ * product decisions are made, not as confirmed inventory. `gender` is a
+ * demo grouping for the homepage tabs, not a claim about how the brand
+ * will actually segment its range.
  */
 export const products: Product[] = [
   {
@@ -61,6 +62,7 @@ export const products: Product[] = [
     ],
     sizes: IN_STOCK_SIZES,
     tone: "#3d2b1f",
+    image: "/card-images/product-photos/pexels-collab-media-173741945-15059774.jpg",
   },
   {
     handle: "balanti-loafer",
@@ -90,6 +92,7 @@ export const products: Product[] = [
       { value: "UK 12", inStock: false },
     ],
     tone: "#8b5a2b",
+    image: "/card-images/product-photos/pexels-elnur-memmednebiyev-125323681-9992899.jpg",
   },
   {
     handle: "balanti-derby",
@@ -111,6 +114,7 @@ export const products: Product[] = [
     ],
     sizes: IN_STOCK_SIZES,
     tone: "#5a4130",
+    image: "/card-images/product-photos/pexels-duncanoluwaseun-186035.jpg",
   },
   {
     handle: "balanti-monk-strap",
@@ -131,6 +135,8 @@ export const products: Product[] = [
     ],
     sizes: IN_STOCK_SIZES,
     tone: "#1f1c1a",
+    // No unbranded monk-strap photo in the supplied image set — falls back
+    // to the tone-swatch placeholder rather than forcing a bad match.
   },
   {
     handle: "balanti-chelsea-boot",
@@ -152,6 +158,7 @@ export const products: Product[] = [
     ],
     sizes: IN_STOCK_SIZES,
     tone: "#4a4a4a",
+    image: "/card-images/product-photos/pexels-arturoaez225-13823041.jpg",
   },
   {
     handle: "balanti-ballet-flat",
@@ -171,6 +178,95 @@ export const products: Product[] = [
     ],
     sizes: IN_STOCK_SIZES,
     tone: "#a67b4f",
+    image: "/card-images/product-photos/pexels-angela-petrosyan-2149425377-31241090.jpg",
+  },
+  {
+    handle: "balanti-wingtip-oxford",
+    name: "Balanti Wingtip Oxford",
+    material: "Full-Grain Leather",
+    colorway: "Oxblood",
+    price: 205,
+    badge: "New",
+    gender: "men",
+    targetCustomer: "Professionals who want more detail than a plain-toe Oxford.",
+    description:
+      "The same daily-wear Oxford construction with a broguing detail across the toe cap — a little more character for the days a plain toe feels flat.",
+    details: [
+      "Full-grain leather upper",
+      "Broguing detail, closed lace",
+      "Cushioned, all-day comfort footbed",
+      "Durable rubber-leather hybrid outsole",
+      "Resoleable construction",
+    ],
+    sizes: IN_STOCK_SIZES,
+    tone: "#5c1f1a",
+    image: "/card-images/product-photos/pexels-star-photography-117690710-13611901.jpg",
+  },
+  {
+    handle: "balanti-penny-loafer",
+    name: "Balanti Penny Loafer",
+    material: "Suede",
+    colorway: "Navy",
+    price: 175,
+    badge: "New",
+    gender: "women",
+    targetCustomer: "Professionals who want a softer alternative to the leather Loafer.",
+    description:
+      "A penny-strap loafer in suede — softer underfoot from the first wear, still built to the same all-day construction standard as the rest of the range.",
+    details: [
+      "Suede upper",
+      "Penny strap detail",
+      "Cushioned, all-day comfort footbed",
+      "Durable rubber-leather hybrid outsole",
+      "Resoleable construction",
+    ],
+    sizes: IN_STOCK_SIZES,
+    tone: "#2b3a4a",
+    image: "/card-images/product-photos/pexels-valentin-ivantsov-2154772556-36581188.jpg",
+  },
+  {
+    handle: "balanti-ankle-boot",
+    name: "Balanti Ankle Boot",
+    material: "Full-Grain Leather",
+    colorway: "Black",
+    price: 209,
+    badge: "New",
+    gender: "women",
+    targetCustomer: "Professionals who want a boot with a little more coverage than the Chelsea.",
+    description:
+      "A lace-up ankle boot, full-grain leather, built for the same desk-to-street day as the rest of the range — just with more coverage through the colder months.",
+    details: [
+      "Full-grain leather upper",
+      "Lace-up, side zip for easy on/off",
+      "Cushioned, all-day comfort footbed",
+      "Durable rubber-leather hybrid outsole",
+      "Resoleable construction",
+    ],
+    sizes: IN_STOCK_SIZES,
+    tone: "#241f1c",
+    image: "/card-images/product-photos/pexels-arturoaez225-13823041.jpg",
+  },
+  {
+    handle: "balanti-slip-on-sneaker",
+    name: "Balanti Slip-On Sneaker",
+    material: "Nubuck",
+    colorway: "Grey",
+    price: 165,
+    badge: "New",
+    gender: "men",
+    targetCustomer: "Professionals who want a casual pair for the days off from the office.",
+    description:
+      "A minimal slip-on sneaker in nubuck for the days that don't call for a lace-up — same leather-first material story, just off duty.",
+    details: [
+      "Nubuck upper",
+      "Slip-on, elastic gussets",
+      "Cushioned, all-day comfort footbed",
+      "Flexible rubber-leather hybrid outsole",
+      "Resoleable construction",
+    ],
+    sizes: IN_STOCK_SIZES,
+    tone: "#6b6b6b",
+    image: "/card-images/product-photos/pexels-kampus-7857501.jpg",
   },
 ];
 

@@ -51,7 +51,11 @@
   --section-y: clamp(64px, 10vw, 128px); /* rhythm between major blocks */
 
   /* ---- Layout ---- */
-  --content-max: 1280px;
+  /* Generous but bounded — on any normal desktop viewport (up to ~1920px)
+     this never kicks in, so the 56px gutter is the only side margin. It
+     only caps extreme ultra-wide monitors, where product-card grids would
+     otherwise stretch to an unreasonable size with no limit at all. */
+  --content-max: 1920px;
   --gutter: 56px;
 
   /* ---- Radius ---- */
@@ -209,6 +213,16 @@ section { padding-block: var(--section-y); }
   background: var(--surface);
   border-radius: var(--r-md);
   box-shadow: var(--shadow-card);
+}
+
+/* Horizontally-scrolling rails navigated by chevron buttons, not a
+   visible native scrollbar. Touch/trackpad swipe still works. */
+.no-scrollbar {
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
 }
 
 /* Accessibility */

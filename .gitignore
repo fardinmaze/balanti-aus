@@ -9,9 +9,27 @@ dist-ssr
 .DS_Store
 *.local
 
-# unused stock footage — only the video actually used in the hero is tracked
+# unused stock footage — only the videos actually used in the hero rotation are tracked
 public/videos/*
 !public/videos/8276047-hd_1920_1080_30fps.mp4
+!public/videos/8142267-uhd_4096_2160_24fps.mp4
+!public/videos/7166787-uhd_4096_2160_30fps.mp4
+
+# unused stock photos — only the images actually referenced in src/lib/products.ts
+# and the ShopByCategory tiles are tracked; the rest stay local for future swaps
+public/card-images/*
+public/card-images/product-photos/*
+!public/card-images/pexels-antonius-ferret-5275783.jpg
+!public/card-images/product-photos/
+!public/card-images/product-photos/pexels-angela-petrosyan-2149425377-31241090.jpg
+!public/card-images/product-photos/pexels-arturoaez225-13823041.jpg
+!public/card-images/product-photos/pexels-collab-media-173741945-15059774.jpg
+!public/card-images/product-photos/pexels-duncanoluwaseun-186035.jpg
+!public/card-images/product-photos/pexels-elnur-memmednebiyev-125323681-9992899.jpg
+!public/card-images/product-photos/pexels-kampus-7857501.jpg
+!public/card-images/product-photos/pexels-mahsima-10827097.jpg
+!public/card-images/product-photos/pexels-star-photography-117690710-13611901.jpg
+!public/card-images/product-photos/pexels-valentin-ivantsov-2154772556-36581188.jpg
 
 # env files (can opt-in for committing if needed)
 .env*
