@@ -5,7 +5,7 @@ import NewArrivals from "@/components/home/NewArrivals.vue";
 import ShopByCategory from "@/components/home/ShopByCategory.vue";
 import TrendingNow from "@/components/home/TrendingNow.vue";
 import ShopByType from "@/components/home/ShopByType.vue";
-import StoryBlock from "@/components/home/StoryBlock.vue";
+import CategoryLinks from "@/components/home/CategoryLinks.vue";
 import Newsletter from "@/components/home/Newsletter.vue";
 </script>
 
@@ -16,6 +16,6 @@ import Newsletter from "@/components/home/Newsletter.vue";
   <ShopByCategory />
   <TrendingNow />
   <ShopByType />
-  <StoryBlock />
+  <CategoryLinks />
   <Newsletter />
 </template>

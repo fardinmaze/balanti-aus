@@ -43,7 +43,7 @@ const matched = computed(() => {
         <RouterLink to="/" class="underline">Shop what's live now</RouterLink>
       </p>
 
-      <div v-else class="mt-8 grid grid-cols-2 gap-x-6 gap-y-12 sm:grid-cols-3 sm:gap-x-8">
+      <div v-else class="mt-8 grid grid-cols-2 gap-x-4 gap-y-8 sm:grid-cols-3 sm:gap-x-4">
         <ProductCard v-for="product in matched" :key="product.handle" :product="product" />
       </div>
     </div>

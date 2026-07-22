@@ -84,7 +84,7 @@ onUnmounted(stop);
           <div
             v-for="(page, i) in pages"
             :key="i"
-            class="grid w-full shrink-0 grid-cols-1 gap-x-6 gap-y-10 text-left sm:grid-cols-3 sm:gap-x-8"
+            class="grid w-full shrink-0 grid-cols-1 gap-x-4 gap-y-8 text-left sm:grid-cols-3 sm:gap-x-4"
           >
             <ProductCard v-for="product in page" :key="product.handle" :product="product" />
           </div>

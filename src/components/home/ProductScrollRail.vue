@@ -12,7 +12,7 @@ function scrollByAmount(direction: 1 | -1) {
   const el = trackRef.value;
   if (!el) return;
   const cardWidth = el.querySelector<HTMLElement>(":scope > div")?.offsetWidth ?? 320;
-  el.scrollBy({ left: direction * (cardWidth + 32), behavior: "smooth" });
+  el.scrollBy({ left: direction * (cardWidth + 16), behavior: "smooth" });
 }
 </script>
 
@@ -43,7 +43,7 @@ function scrollByAmount(direction: 1 | -1) {
 
       <div
         ref="trackRef"
-        class="no-scrollbar -mx-14 mt-8 flex snap-x snap-mandatory gap-8 overflow-x-auto scroll-smooth px-14 pb-2"
+        class="no-scrollbar -mx-14 mt-8 flex snap-x snap-mandatory gap-4 overflow-x-auto scroll-smooth px-14 pb-2 scroll-px-14"
       >
         <div v-for="product in items" :key="product.handle" class="w-[70vw] shrink-0 snap-start sm:w-[320px]">
           <ProductCard :product="product" />
