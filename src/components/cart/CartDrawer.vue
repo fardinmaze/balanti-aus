@@ -100,7 +100,7 @@ const lineItems = computed<LineItem[]>(() =>
             <span class="text-sm font-medium text-muted">Subtotal</span>
             <PriceTag :amount="cart.subtotal.value" class="text-base font-semibold" />
           </div>
-          <BaseButton to="/checkout" class="w-full" @click="cart.closeCart()">Checkout</BaseButton>
+          <BaseButton to="/checkout" class="w-full !text-white" @click="cart.closeCart()">Checkout</BaseButton>
           <p class="mt-3 text-center text-xs text-muted">Free shipping over $150 · Free 30-day returns</p>
         </div>
       </aside>

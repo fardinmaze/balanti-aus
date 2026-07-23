@@ -8,5 +8,5 @@ const newArrivals = computed(() => products.filter((product) => product.badge ==
 </script>
 
 <template>
-  <ProductScrollRail heading="New Arrivals" :items="newArrivals" />
+  <ProductScrollRail heading="New Arrivals" :items="newArrivals" view-all-href="/catalogue?sort=newest" />
 </template>

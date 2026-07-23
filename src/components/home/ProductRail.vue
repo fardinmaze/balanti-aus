@@ -2,6 +2,7 @@
 import { ref, computed, watch, onMounted, onUnmounted } from "vue";
 import { products, type Gender, type Product } from "@/lib/products";
 import ProductCard from "@/components/product/ProductCard.vue";
+import BaseButton from "@/components/ui/BaseButton.vue";
 
 const PER_SLIDE = 3;
 const AUTO_MS = 3000;
@@ -102,6 +103,12 @@ onUnmounted(stop);
           :class="activePage === i ? 'bg-ink' : 'bg-line'"
           @click="goTo(i)"
         />
+      </div>
+
+      <div class="mt-8">
+        <BaseButton variant="ghost" :to="`/catalogue?gender=${activeTab}`">
+          Show All {{ activeTab === "men" ? "Men's" : "Women's" }}
+        </BaseButton>
       </div>
     </div>
   </section>

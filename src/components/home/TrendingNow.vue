@@ -4,5 +4,5 @@ import ProductScrollRail from "@/components/home/ProductScrollRail.vue";
 </script>
 
 <template>
-  <ProductScrollRail heading="Trending Now" :items="products" />
+  <ProductScrollRail heading="Trending Now" :items="products" view-all-href="/catalogue" />
 </template>
