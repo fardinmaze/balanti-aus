@@ -6,7 +6,6 @@ import ShopByCategory from "@/components/home/ShopByCategory.vue";
 import TrendingNow from "@/components/home/TrendingNow.vue";
 import ShopByType from "@/components/home/ShopByType.vue";
 import CategoryLinks from "@/components/home/CategoryLinks.vue";
-import Newsletter from "@/components/home/Newsletter.vue";
 </script>
 
 <template>
@@ -17,5 +16,4 @@ import Newsletter from "@/components/home/Newsletter.vue";
   <TrendingNow />
   <ShopByType />
   <CategoryLinks />
-  <Newsletter />
 </template>

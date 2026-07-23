@@ -37,11 +37,11 @@ const columns = [
   {
     heading: "Accessories",
     links: [
-      { label: "Socks", href: "/category/socks" },
-      { label: "Shoe Laces", href: "/category/shoe-laces" },
-      { label: "Men's Bags", href: "/category/mens-bags" },
-      { label: "Women's Handbags", href: "/category/womens-handbags" },
-      { label: "Sandals", href: "/category/sandals" },
+      { label: "Socks", href: "/catalogue?type=socks" },
+      { label: "Shoe Laces", href: "/catalogue?type=laces" },
+      { label: "Men's Bags", href: "/catalogue?type=mens-bag" },
+      { label: "Women's Handbags", href: "/catalogue?type=womens-handbag" },
+      { label: "Sandals", href: "/catalogue?type=sandals" },
     ],
   },
 ];

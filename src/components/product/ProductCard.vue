@@ -22,7 +22,7 @@ function quickAdd() {
 
 <template>
   <RouterLink :to="`/products/${product.handle}`" class="group block">
-    <div class="relative aspect-[4/5] overflow-hidden rounded-lg bg-surface">
+    <div class="relative aspect-[4/5] overflow-hidden rounded-none bg-surface">
       <img
         v-if="product.image"
         :src="product.image"

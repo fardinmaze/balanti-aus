@@ -4,7 +4,10 @@ import type { Product } from "@/lib/products";
 import ProductCard from "@/components/product/ProductCard.vue";
 import ChevronIcon from "@/components/ui/icons/ChevronIcon.vue";
 
-defineProps<{ heading: string; items: Product[] }>();
+withDefaults(
+  defineProps<{ heading: string; items: Product[]; viewAllHref?: string; viewAllLabel?: string }>(),
+  { viewAllLabel: "Show All" }
+);
 
 const trackRef = ref<HTMLDivElement | null>(null);
 
@@ -21,7 +24,14 @@ function scrollByAmount(direction: 1 | -1) {
     <div class="container">
       <div class="flex items-end justify-between gap-4">
         <h2>{{ heading }}</h2>
-        <div class="mb-2 flex gap-2">
+        <div class="mb-2 flex items-center gap-4">
+          <RouterLink
+            v-if="viewAllHref"
+            :to="viewAllHref"
+            class="text-sm font-semibold underline underline-offset-4 hover:opacity-70"
+          >
+            {{ viewAllLabel }}
+          </RouterLink>
           <button
             type="button"
             class="flex h-10 w-10 items-center justify-center rounded-pill border border-line"
@@ -43,7 +53,7 @@ function scrollByAmount(direction: 1 | -1) {
 
       <div
         ref="trackRef"
-        class="no-scrollbar -mx-14 mt-8 flex snap-x snap-mandatory gap-4 overflow-x-auto scroll-smooth px-14 pb-2 scroll-px-14"
+        class="no-scrollbar -mx-14 mt-8 flex snap-x snap-mandatory gap-[2px] overflow-x-auto scroll-smooth px-14 pb-2 scroll-px-14"
       >
         <div v-for="product in items" :key="product.handle" class="w-[70vw] shrink-0 snap-start sm:w-[320px]">
           <ProductCard :product="product" />

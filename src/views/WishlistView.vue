@@ -23,7 +23,7 @@ const products = computed<Product[]>(() =>
         <RouterLink to="/" class="underline">Browse the collection</RouterLink>
       </p>
 
-      <div v-else class="grid grid-cols-2 gap-x-4 gap-y-8 sm:gap-x-4">
+      <div v-else class="grid grid-cols-2 gap-[2px]">
         <ProductCard v-for="product in products" :key="product.handle" :product="product" />
       </div>
     </div>

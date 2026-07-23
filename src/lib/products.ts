@@ -2,6 +2,13 @@ export type Size = { value: string; inStock: boolean };
 
 export type Gender = "men" | "women";
 
+export type Style = "formal" | "casual" | "boots";
+
+// Matches CategoryIconName (ShopByType icon rail) so those homepage links
+// can filter the catalogue page precisely. Only assigned where we actually
+// stock that silhouette — sandals/socks/laces/bags correctly match nothing.
+export type ShopType = "boots" | "loafers" | "sneakers";
+
 export type Product = {
   handle: string;
   name: string;
@@ -10,6 +17,8 @@ export type Product = {
   price: number; // AUD
   badge?: "New" | "Best Seller";
   gender: Gender; // demo grouping only, see note below
+  style: Style; // powers the "Shop by style" banners on the gender landing pages
+  shopType?: ShopType; // powers the homepage "Shop by Type" catalogue filter
   targetCustomer: string;
   description: string;
   details: string[];
@@ -50,6 +59,7 @@ export const products: Product[] = [
     price: 189,
     badge: "Best Seller",
     gender: "men",
+    style: "formal",
     targetCustomer: "Professionals seeking formal business footwear.",
     description:
       "A closed-lace Oxford built for the office and everything after it. Full-grain leather upper, cushioned footbed, and a construction meant for daily wear rather than one meeting a week.",
@@ -72,6 +82,8 @@ export const products: Product[] = [
     price: 169,
     badge: "New",
     gender: "women",
+    style: "formal",
+    shopType: "loafers",
     targetCustomer: "Professionals seeking versatile smart-casual footwear.",
     description:
       "A slip-on loafer that moves between smart-casual and business without changing its mind. Full-grain leather, a low broken-in feel from day one, and a sole built for pavement, not just carpet.",
@@ -102,6 +114,7 @@ export const products: Product[] = [
     price: 179,
     badge: "New",
     gender: "men",
+    style: "casual",
     targetCustomer: "Professionals who want an open-lace alternative to the Oxford.",
     description:
       "An open-lace Derby with a slightly roomier fit than the Oxford — same full-grain leather and construction standard, easier on and off at the end of a long day.",
@@ -123,6 +136,7 @@ export const products: Product[] = [
     colorway: "Black",
     price: 195,
     gender: "men",
+    style: "formal",
     targetCustomer: "Professionals who want a sharper alternative for formal occasions.",
     description:
       "A double monk strap for when the Oxford feels too plain and a full lace-up feels like too much. Full-grain leather, buckled not laced, built to the same daily-wear standard.",
@@ -146,6 +160,8 @@ export const products: Product[] = [
     price: 199,
     badge: "New",
     gender: "women",
+    style: "boots",
+    shopType: "boots",
     targetCustomer: "Professionals who want a boot that still works with a suit.",
     description:
       "An elastic-sided Chelsea boot in suede, low enough profile to sit under a trouser hem and cut clean enough for the office, not just the weekend.",
@@ -167,6 +183,7 @@ export const products: Product[] = [
     colorway: "Camel",
     price: 159,
     gender: "women",
+    style: "casual",
     targetCustomer: "Professionals who want a flat that still reads formal.",
     description:
       "A round-toe ballet flat in nubuck, built with the same full-day construction standard as the rest of the range rather than a soft-sided throwaway.",
@@ -188,6 +205,7 @@ export const products: Product[] = [
     price: 205,
     badge: "New",
     gender: "men",
+    style: "formal",
     targetCustomer: "Professionals who want more detail than a plain-toe Oxford.",
     description:
       "The same daily-wear Oxford construction with a broguing detail across the toe cap — a little more character for the days a plain toe feels flat.",
@@ -210,6 +228,8 @@ export const products: Product[] = [
     price: 175,
     badge: "New",
     gender: "women",
+    style: "casual",
+    shopType: "loafers",
     targetCustomer: "Professionals who want a softer alternative to the leather Loafer.",
     description:
       "A penny-strap loafer in suede — softer underfoot from the first wear, still built to the same all-day construction standard as the rest of the range.",
@@ -232,6 +252,8 @@ export const products: Product[] = [
     price: 209,
     badge: "New",
     gender: "women",
+    style: "boots",
+    shopType: "boots",
     targetCustomer: "Professionals who want a boot with a little more coverage than the Chelsea.",
     description:
       "A lace-up ankle boot, full-grain leather, built for the same desk-to-street day as the rest of the range — just with more coverage through the colder months.",
@@ -254,6 +276,8 @@ export const products: Product[] = [
     price: 165,
     badge: "New",
     gender: "men",
+    style: "casual",
+    shopType: "sneakers",
     targetCustomer: "Professionals who want a casual pair for the days off from the office.",
     description:
       "A minimal slip-on sneaker in nubuck for the days that don't call for a lace-up — same leather-first material story, just off duty.",
@@ -267,6 +291,58 @@ export const products: Product[] = [
     sizes: IN_STOCK_SIZES,
     tone: "#6b6b6b",
     image: "/card-images/product-photos/pexels-kampus-7857501.jpg",
+  },
+  {
+    handle: "balanti-cap-toe-oxford",
+    name: "Balanti Cap-Toe Oxford",
+    material: "Full-Grain Leather",
+    colorway: "Black",
+    price: 199,
+    badge: "New",
+    gender: "men",
+    style: "formal",
+    targetCustomer: "Professionals who want a sharper, more formal Oxford for the boardroom.",
+    description:
+      "A straight cap-toe Oxford in black full-grain leather — the most formal shoe in the range, built for board meetings and courtrooms but comfortable enough for the walk there.",
+    details: [
+      "Full-grain leather upper",
+      "Straight cap-toe, closed lace",
+      "Cushioned, all-day comfort footbed",
+      "Durable rubber-leather hybrid outsole",
+      "Resoleable construction",
+    ],
+    sizes: IN_STOCK_SIZES,
+    tone: "#221f1d",
+  },
+  {
+    handle: "balanti-block-heel-pump",
+    name: "Balanti Block Heel Pump",
+    material: "Full-Grain Leather",
+    colorway: "Cognac",
+    price: 185,
+    badge: "New",
+    gender: "women",
+    style: "formal",
+    targetCustomer: "Professionals who want a low block heel that still holds up to a full workday.",
+    description:
+      "A round-toe pump on a low block heel — enough lift for the office, stable enough for the commute. Full-grain leather, built to the same daily-wear standard as the rest of the range.",
+    details: [
+      "Full-grain leather upper",
+      "Low block heel (35mm)",
+      "Cushioned, all-day comfort footbed",
+      "Durable rubber-leather hybrid outsole",
+      "Resoleable construction",
+    ],
+    sizes: [
+      { value: "UK 6", inStock: true },
+      { value: "UK 7", inStock: true },
+      { value: "UK 8", inStock: true },
+      { value: "UK 9", inStock: true },
+      { value: "UK 10", inStock: false },
+      { value: "UK 11", inStock: true },
+      { value: "UK 12", inStock: true },
+    ],
+    tone: "#7a4a26",
   },
 ];
 

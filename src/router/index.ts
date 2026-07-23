@@ -39,9 +39,14 @@ const router = createRouter({
       component: () => import("@/views/WishlistView.vue"),
     },
     {
-      path: "/category/:slug",
+      path: "/category/:slug(men|women|kids)",
       name: "category",
-      component: () => import("@/views/CategoryView.vue"),
+      component: () => import("@/views/CategoryLandingView.vue"),
+    },
+    {
+      path: "/catalogue",
+      name: "catalogue",
+      component: () => import("@/views/CatalogueView.vue"),
     },
     {
       path: "/checkout",

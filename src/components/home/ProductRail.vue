@@ -4,7 +4,7 @@ import { products, type Gender, type Product } from "@/lib/products";
 import ProductCard from "@/components/product/ProductCard.vue";
 
 const PER_SLIDE = 3;
-const AUTO_MS = 4500;
+const AUTO_MS = 3000;
 
 const activeTab = ref<Gender>("women");
 const filtered = computed(() => products.filter((product) => product.gender === activeTab.value));
@@ -78,13 +78,13 @@ onUnmounted(stop);
 
       <div class="relative mt-12 overflow-hidden">
         <div
-          class="flex transition-transform duration-700 ease-[var(--ease)]"
+          class="flex transition-transform duration-1000 ease-[cubic-bezier(0.65,0,0.35,1)]"
           :style="{ transform: `translateX(-${activePage * 100}%)` }"
         >
           <div
             v-for="(page, i) in pages"
             :key="i"
-            class="grid w-full shrink-0 grid-cols-1 gap-x-4 gap-y-8 text-left sm:grid-cols-3 sm:gap-x-4"
+            class="grid w-full shrink-0 grid-cols-1 gap-[2px] text-left sm:grid-cols-3"
           >
             <ProductCard v-for="product in page" :key="product.handle" :product="product" />
           </div>
