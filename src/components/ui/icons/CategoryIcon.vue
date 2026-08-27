@@ -1,4 +1,6 @@
 <script setup lang="ts">
+import { computed } from "vue";
+
 /**
  * Self-authored placeholder glyphs — svgrepo.com couldn't be reached
  * (rate-limited/blocked in this environment) to pull real icon assets.
@@ -32,7 +34,11 @@ const ICON_PATHS: Record<CategoryIconName, string[]> = {
   "womens-handbag": ["M4 10h16v10H4z", "M8 10V8a4 4 0 0 1 8 0v2"],
 };
 
-const props = withDefaults(defineProps<{ name: CategoryIconName; class?: string }>(), { class: "" });
+/** Generic shoe silhouette — used for any real backend category slug that doesn't match a hand-drawn glyph above. */
+const DEFAULT_PATHS = ["M3 16c0-2.5 2.5-4.5 7-5.5s7-3 9-3c1.7 0 1.3 1.7 2.7 2 1.7.6 2.3 1.7 2.3 3 0 1.5-1 2.5-3 2.5H5c-1 0-2-.7-2-2z"];
+
+const props = withDefaults(defineProps<{ name: string; class?: string }>(), { class: "" });
+const paths = computed(() => ICON_PATHS[props.name as CategoryIconName] ?? DEFAULT_PATHS);
 </script>
 
 <template>
@@ -46,6 +52,6 @@ const props = withDefaults(defineProps<{ name: CategoryIconName; class?: string 
     stroke-linejoin="round"
     aria-hidden="true"
   >
-    <path v-for="(d, i) in ICON_PATHS[props.name]" :key="i" :d="d" />
+    <path v-for="(d, i) in paths" :key="i" :d="d" />
   </svg>
 </template>

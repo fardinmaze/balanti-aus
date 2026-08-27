@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { computed } from "vue";
 import { RouterLink } from "vue-router";
-import type { Product } from "@/lib/products";
+import type { Product } from "@/types/product";
 import PlaceholderImage from "@/components/ui/PlaceholderImage.vue";
 import PriceTag from "@/components/ui/Price.vue";
 import HeartIcon from "@/components/ui/icons/HeartIcon.vue";
@@ -16,7 +16,7 @@ const firstInStockSize = computed(() => props.product.sizes.find((size) => size.
 
 function quickAdd() {
   if (!firstInStockSize.value) return;
-  cart.addItem(props.product.handle, firstInStockSize.value);
+  cart.addItem(props.product, firstInStockSize.value);
 }
 </script>
 
@@ -54,7 +54,7 @@ function quickAdd() {
         class="absolute right-3 top-3 flex h-9 w-9 items-center justify-center rounded-pill bg-surface text-ink shadow-[var(--shadow-card)]"
         :aria-label="wishlist.isWishlisted(product.handle) ? 'Remove from wishlist' : 'Add to wishlist'"
         :aria-pressed="wishlist.isWishlisted(product.handle)"
-        @click.stop.prevent="wishlist.toggle(product.handle)"
+        @click.stop.prevent="wishlist.toggle(product)"
       >
         <HeartIcon class="h-4 w-4" :filled="wishlist.isWishlisted(product.handle)" />
       </button>
@@ -70,7 +70,11 @@ function quickAdd() {
     <div class="mt-4 space-y-1.5">
       <h3 class="font-display text-lg font-semibold sm:text-xl">{{ product.name }}</h3>
       <p class="eyebrow">{{ product.material }} · {{ product.colorway }}</p>
-      <PriceTag :amount="product.price" class="text-base" />
+      <PriceTag
+        :amount="product.onSale ? product.offerPrice! : product.price"
+        :compare-at-amount="product.onSale ? product.price : undefined"
+        class="text-base"
+      />
     </div>
   </RouterLink>
 </template>

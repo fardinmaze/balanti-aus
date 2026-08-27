@@ -1,9 +1,8 @@
 <script setup lang="ts">
 import { story } from "@/content/copy";
-import { products } from "@/lib/products";
 import PlaceholderImage from "@/components/ui/PlaceholderImage.vue";
 
-const [oxford] = products;
+const heroTone = "#3d2b1f";
 </script>
 
 <template>
@@ -16,7 +15,7 @@ const [oxford] = products;
 
   <section class="!pt-0">
     <div class="container grid max-w-4xl gap-10 lg:grid-cols-2 lg:items-center">
-      <PlaceholderImage :tone="oxford.tone" :label="oxford.name" angle="worn" class="aspect-[4/3] w-full rounded-lg" />
+      <PlaceholderImage :tone="heroTone" :label="story.heading" angle="worn" class="aspect-[4/3] w-full rounded-lg" />
       <div class="space-y-4">
         <p v-for="(paragraph, i) in story.paragraphs" :key="i" class="text-muted">{{ paragraph }}</p>
       </div>

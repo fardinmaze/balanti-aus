@@ -1,8 +1,10 @@
 <script setup lang="ts">
-import { products } from "@/lib/products";
+import { useCatalogue } from "@/lib/catalogue";
 import ProductScrollRail from "@/components/home/ProductScrollRail.vue";
+
+const catalogue = useCatalogue();
 </script>
 
 <template>
-  <ProductScrollRail heading="Trending Now" :items="products" view-all-href="/catalogue" />
+  <ProductScrollRail v-if="catalogue.onSale.value.length" heading="On Sale" :items="catalogue.onSale.value" view-all-href="/catalogue" />
 </template>

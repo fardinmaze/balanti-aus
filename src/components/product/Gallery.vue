@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { ref } from "vue";
-import type { Product } from "@/lib/products";
+import type { Product } from "@/types/product";
 import PlaceholderImage, { type Angle } from "@/components/ui/PlaceholderImage.vue";
 
 defineProps<{ product: Product }>();

@@ -1,56 +1,26 @@
-import { reactive, computed, watch } from "vue";
+import { computed } from "vue";
+import { useRoute, useRouter } from "vue-router";
+import { useStore } from "@/store";
+import type { Product } from "@/types/product";
 
-const STORAGE_KEY = "balanti-wishlist";
-
-function loadInitial(): string[] {
-  try {
-    const raw = localStorage.getItem(STORAGE_KEY);
-    return raw ? (JSON.parse(raw) as string[]) : [];
-  } catch {
-    return [];
-  }
-}
-
-const state = reactive({
-  handles: loadInitial(),
-});
-
-watch(
-  () => state.handles,
-  (handles) => {
-    try {
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(handles));
-    } catch {
-      /* storage unavailable — wishlist just won't persist across reloads */
-    }
-  },
-  { deep: true }
-);
-
-function isWishlisted(handle: string) {
-  return state.handles.includes(handle);
-}
-
-function toggle(handle: string) {
-  const idx = state.handles.indexOf(handle);
-  if (idx === -1) state.handles.push(handle);
-  else state.handles.splice(idx, 1);
-}
-
-function remove(handle: string) {
-  const idx = state.handles.indexOf(handle);
-  if (idx !== -1) state.handles.splice(idx, 1);
-}
-
-const count = computed(() => state.handles.length);
-
-/** Module-level singleton store — same pattern as lib/cart.ts. */
+/** Thin composable over the `wishlist` Vuex module — always server-backed (GET/POST/DELETE /wishlist/*). */
 export function useWishlist() {
+  const store = useStore();
+  const router = useRouter();
+  const route = useRoute();
+
   return {
-    handles: computed(() => state.handles),
-    count,
-    isWishlisted,
-    toggle,
-    remove,
+    items: computed(() => store.getters["wishlist/items"] as Product[]),
+    count: computed(() => store.getters["wishlist/count"] as number),
+    isWishlisted: (handle: string) => (store.getters["wishlist/isWishlisted"] as (h: string) => boolean)(handle),
+    async toggle(product: Product) {
+      if (!store.getters["auth/isAuthenticated"]) {
+        router.push({ name: "login", query: { redirect: route.fullPath } });
+        return;
+      }
+      await store.dispatch("wishlist/toggle", product).catch(() => {
+        /* optimistic add/remove is already rolled back by the store action */
+      });
+    },
   };
 }

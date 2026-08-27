@@ -33,6 +33,7 @@ public/card-images/product-photos/*
 
 # env files (can opt-in for committing if needed)
 .env*
+!.env.example
 
 # editor
 .vscode/*

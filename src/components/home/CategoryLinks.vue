@@ -29,9 +29,9 @@ const columns = [
   {
     heading: "Shop By",
     links: [
-      { label: "Men", href: "/category/men" },
-      { label: "Women", href: "/category/women" },
-      { label: "Kids", href: "/category/kids" },
+      { label: "Men", href: "/catalogue?category=men" },
+      { label: "Women", href: "/catalogue?category=women" },
+      { label: "Kids", href: "/catalogue?category=kids" },
     ],
   },
   {

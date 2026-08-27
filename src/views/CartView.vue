@@ -1,23 +1,10 @@
 <script setup lang="ts">
-import { computed } from "vue";
-import { useCart, type CartLine } from "@/lib/cart";
-import { getProduct, type Product } from "@/lib/products";
+import { useCart } from "@/lib/cart";
 import PlaceholderImage from "@/components/ui/PlaceholderImage.vue";
 import PriceTag from "@/components/ui/Price.vue";
 import BaseButton from "@/components/ui/BaseButton.vue";
 
 const cart = useCart();
-
-type LineItem = { line: CartLine; product: Product };
-
-const lineItems = computed<LineItem[]>(() =>
-  cart.lines.value
-    .map((line) => {
-      const product = getProduct(line.handle);
-      return product ? { line, product } : null;
-    })
-    .filter((item): item is LineItem => item !== null)
-);
 </script>
 
 <template>
@@ -25,26 +12,27 @@ const lineItems = computed<LineItem[]>(() =>
     <div class="container max-w-3xl">
       <h1>Your bag</h1>
 
-      <p v-if="lineItems.length === 0" class="mt-4 text-muted">
+      <p v-if="cart.lines.value.length === 0" class="mt-4 text-muted">
         Your bag is empty.
         <RouterLink to="/" class="underline">Continue shopping</RouterLink>
       </p>
 
       <template v-else>
         <ul class="mt-6 divide-y divide-line border-y border-line">
-          <li v-for="{ line, product } in lineItems" :key="`${line.handle}-${line.size}`" class="flex gap-4 py-5">
+          <li v-for="line in cart.lines.value" :key="`${line.handle}-${line.size}`" class="flex gap-4 py-5">
             <div class="h-28 w-24 shrink-0 overflow-hidden rounded-md">
-              <PlaceholderImage :tone="product.tone" :label="product.name" class="h-full w-full" />
+              <img v-if="line.image" :src="line.image" :alt="line.name" class="h-full w-full object-cover" />
+              <PlaceholderImage v-else :tone="line.tone" :label="line.name" class="h-full w-full" />
             </div>
             <div class="flex flex-1 flex-col">
               <div class="flex justify-between gap-4">
                 <div>
-                  <RouterLink :to="`/products/${product.handle}`" class="font-semibold hover:underline">
-                    {{ product.name }}
+                  <RouterLink :to="`/products/${line.handle}`" class="font-semibold hover:underline">
+                    {{ line.name }}
                   </RouterLink>
-                  <p class="eyebrow mt-1">{{ product.colorway }} · {{ line.size }}</p>
+                  <p class="eyebrow mt-1">{{ line.colorway }} · {{ line.size }}</p>
                 </div>
-                <PriceTag :amount="product.price * line.qty" class="text-sm font-semibold" />
+                <PriceTag :amount="line.price * line.qty" class="text-sm font-semibold" />
               </div>
               <div class="mt-auto flex items-center gap-2 pt-3">
                 <button

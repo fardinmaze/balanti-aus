@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { ref } from "vue";
-import type { Product } from "@/lib/products";
+import type { Product } from "@/types/product";
 import ProductCard from "@/components/product/ProductCard.vue";
 import ChevronIcon from "@/components/ui/icons/ChevronIcon.vue";
 

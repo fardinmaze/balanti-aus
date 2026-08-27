@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { ref, computed } from "vue";
 import { useRouter } from "vue-router";
-import type { Product } from "@/lib/products";
+import type { Product } from "@/types/product";
 import { useCart } from "@/lib/cart";
 import BaseButton from "@/components/ui/BaseButton.vue";
 
@@ -25,7 +25,7 @@ function addToBag() {
     showSizeError.value = true;
     return;
   }
-  cart.addItem(props.product.handle, selectedSize.value);
+  cart.addItem(props.product, selectedSize.value);
 }
 
 function buyNow() {
@@ -33,7 +33,7 @@ function buyNow() {
     showSizeError.value = true;
     return;
   }
-  cart.addItem(props.product.handle, selectedSize.value);
+  cart.addItem(props.product, selectedSize.value);
   cart.closeCart();
   router.push("/checkout");
 }
@@ -73,8 +73,6 @@ function buyNow() {
       <BaseButton class="flex-1" @click="buyNow">Buy now</BaseButton>
     </div>
 
-    <p class="mt-3 text-xs text-muted">
-      Demo checkout — no real payment is processed.
-    </p>
+    <p class="mt-3 text-xs text-muted">Cash on Delivery — pay when your order arrives.</p>
   </div>
 </template>

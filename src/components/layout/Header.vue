@@ -1,16 +1,46 @@
 <script setup lang="ts">
-import { ref, onBeforeUnmount } from "vue";
+import { computed, ref, onBeforeUnmount } from "vue";
 import { RouterLink } from "vue-router";
-import { megaMenuNav } from "@/content/nav";
+import type { MegaMenuColumn } from "@/content/nav";
 import { brand } from "@/content/copy";
 import { useCart } from "@/lib/cart";
 import { useWishlist } from "@/lib/wishlist";
+import { useAuth } from "@/lib/auth";
+import { useCatalogue } from "@/lib/catalogue";
+import { isChildOf } from "@/lib/category";
 import CartIcon from "@/components/ui/icons/CartIcon.vue";
 import HeartIcon from "@/components/ui/icons/HeartIcon.vue";
+import UserIcon from "@/components/ui/icons/UserIcon.vue";
 import MegaMenu from "@/components/layout/MegaMenu.vue";
 
 const cart = useCart();
 const wishlist = useWishlist();
+const auth = useAuth();
+const catalogue = useCatalogue();
+
+// Primary nav mirrors whatever top-level categories the backend actually
+// has seeded (GET /site-api/top-categories) instead of a fixed Men/Women/
+// Kids/Accessories list; each dropdown lists that category's real
+// subcategories (GET /site-api/all-categories) rather than hand-authored copy.
+type NavItem = { label: string; href: string; columns: MegaMenuColumn[] };
+const navItems = computed<NavItem[]>(() =>
+  catalogue.topCategories.value.map((cat) => {
+    const subcategories = catalogue.categories.value.filter((c) => isChildOf(c, cat.id));
+    const columns: MegaMenuColumn[] = subcategories.length
+      ? [
+          {
+            heading: cat.name,
+            links: [
+              { label: `Shop All ${cat.name}`, href: `/catalogue?category=${cat.slug}` },
+              ...subcategories.map((s) => ({ label: s.name, href: `/catalogue?category=${s.slug}` })),
+            ],
+          },
+        ]
+      : [];
+    return { label: cat.name, href: `/catalogue?category=${cat.slug}`, columns };
+  })
+);
+
 const menuOpen = ref(false);
 const openItem = ref<string | null>(null);
 let closeTimer: ReturnType<typeof setTimeout> | null = null;
@@ -59,10 +89,10 @@ onBeforeUnmount(() => window.removeEventListener("keydown", onKeydown));
 
       <nav class="hidden items-center gap-6 md:flex" aria-label="Primary">
         <div
-          v-for="item in megaMenuNav"
+          v-for="item in navItems"
           :key="item.href"
           class="relative"
-          @mouseenter="openMegaMenu(item.label)"
+          @mouseenter="item.columns.length && openMegaMenu(item.label)"
         >
           <RouterLink
             :to="item.href"
@@ -76,6 +106,14 @@ onBeforeUnmount(() => window.removeEventListener("keydown", onKeydown));
       </nav>
 
       <div class="flex items-center gap-1">
+        <RouterLink
+          :to="auth.isAuthenticated.value ? '/account' : '/account/login'"
+          class="inline-flex min-h-[var(--tap-min)] min-w-[var(--tap-min)] items-center justify-center rounded-md"
+          aria-label="Account"
+        >
+          <UserIcon class="h-5 w-5" />
+        </RouterLink>
+
         <RouterLink
           to="/wishlist"
           class="relative inline-flex min-h-[var(--tap-min)] min-w-[var(--tap-min)] items-center justify-center rounded-md"
@@ -124,10 +162,10 @@ onBeforeUnmount(() => window.removeEventListener("keydown", onKeydown));
     </div>
 
     <div
-      v-for="item in megaMenuNav"
+      v-for="item in navItems"
       :key="`panel-${item.href}`"
       class="absolute inset-x-0 top-full hidden md:block"
-      v-show="openItem === item.label"
+      v-show="openItem === item.label && item.columns.length"
       @mouseenter="openMegaMenu(item.label)"
     >
       <MegaMenu :columns="item.columns" @navigate="closeMegaMenuNow" />
@@ -140,7 +178,7 @@ onBeforeUnmount(() => window.removeEventListener("keydown", onKeydown));
       aria-label="Primary mobile"
     >
       <RouterLink
-        v-for="item in megaMenuNav"
+        v-for="item in navItems"
         :key="item.href"
         :to="item.href"
         class="rounded-md px-2 py-3 text-base font-medium"

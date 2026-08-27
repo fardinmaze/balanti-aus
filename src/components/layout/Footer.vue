@@ -2,8 +2,10 @@
 import { RouterLink } from "vue-router";
 import { footerLinks, utilityMessage } from "@/content/nav";
 import { brand } from "@/content/copy";
+import { useCatalogue } from "@/lib/catalogue";
 
 const year = new Date().getFullYear();
+const catalogue = useCatalogue();
 </script>
 
 <template>
@@ -26,8 +28,8 @@ const year = new Date().getFullYear();
       <div>
         <p class="eyebrow mb-3">Shop</p>
         <ul class="space-y-2">
-          <li v-for="link in footerLinks.shop" :key="link.href">
-            <RouterLink :to="link.href" class="text-sm text-ink hover:opacity-70">{{ link.label }}</RouterLink>
+          <li v-for="cat in catalogue.topCategories.value" :key="cat.id">
+            <RouterLink :to="`/catalogue?category=${cat.slug}`" class="text-sm text-ink hover:opacity-70">{{ cat.name }}</RouterLink>
           </li>
           <li v-for="link in footerLinks.about" :key="link.href">
             <RouterLink :to="link.href" class="text-sm text-ink hover:opacity-70">{{ link.label }}</RouterLink>

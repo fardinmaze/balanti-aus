@@ -1,24 +1,11 @@
 <script setup lang="ts">
-import { computed } from "vue";
 import { RouterLink } from "vue-router";
-import { useCart, type CartLine } from "@/lib/cart";
-import { getProduct, type Product } from "@/lib/products";
+import { useCart } from "@/lib/cart";
 import PriceTag from "@/components/ui/Price.vue";
 import BaseButton from "@/components/ui/BaseButton.vue";
 import PlaceholderImage from "@/components/ui/PlaceholderImage.vue";
 
 const cart = useCart();
-
-type LineItem = { line: CartLine; product: Product };
-
-const lineItems = computed<LineItem[]>(() =>
-  cart.lines.value
-    .map((line) => {
-      const product = getProduct(line.handle);
-      return product ? { line, product } : null;
-    })
-    .filter((item): item is LineItem => item !== null)
-);
 </script>
 
 <template>
@@ -49,18 +36,19 @@ const lineItems = computed<LineItem[]>(() =>
         </div>
 
         <div class="flex-1 overflow-y-auto px-5 py-4">
-          <p v-if="lineItems.length === 0" class="text-sm text-muted">
+          <p v-if="cart.lines.value.length === 0" class="text-sm text-muted">
             Your bag is empty — start with the Oxford or the Loafer.
           </p>
 
           <ul v-else class="space-y-4">
-            <li v-for="{ line, product } in lineItems" :key="`${line.handle}-${line.size}`" class="flex gap-3">
+            <li v-for="line in cart.lines.value" :key="`${line.handle}-${line.size}`" class="flex gap-3">
               <div class="h-20 w-16 shrink-0 overflow-hidden rounded-md">
-                <PlaceholderImage :tone="product.tone" :label="product.name" class="h-full w-full" />
+                <img v-if="line.image" :src="line.image" :alt="line.name" class="h-full w-full object-cover" />
+                <PlaceholderImage v-else :tone="line.tone" :label="line.name" class="h-full w-full" />
               </div>
               <div class="flex flex-1 flex-col gap-1">
-                <p class="text-sm font-semibold">{{ product.name }}</p>
-                <p class="eyebrow">{{ product.colorway }} · {{ line.size }}</p>
+                <p class="text-sm font-semibold">{{ line.name }}</p>
+                <p class="eyebrow">{{ line.colorway }} · {{ line.size }}</p>
                 <div class="mt-auto flex items-center justify-between">
                   <div class="flex items-center gap-2">
                     <button
@@ -81,7 +69,7 @@ const lineItems = computed<LineItem[]>(() =>
                       +
                     </button>
                   </div>
-                  <PriceTag :amount="product.price * line.qty" class="text-sm" />
+                  <PriceTag :amount="line.price * line.qty" class="text-sm" />
                 </div>
                 <button
                   type="button"
@@ -95,7 +83,7 @@ const lineItems = computed<LineItem[]>(() =>
           </ul>
         </div>
 
-        <div v-if="lineItems.length > 0" class="border-t border-line px-5 py-4">
+        <div v-if="cart.lines.value.length > 0" class="border-t border-line px-5 py-4">
           <div class="mb-4 flex items-center justify-between">
             <span class="text-sm font-medium text-muted">Subtotal</span>
             <PriceTag :amount="cart.subtotal.value" class="text-base font-semibold" />

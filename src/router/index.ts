@@ -1,4 +1,5 @@
 import { createRouter, createWebHistory } from "vue-router";
+import { store } from "@/store";
 
 const router = createRouter({
   history: createWebHistory(),
@@ -39,11 +40,6 @@ const router = createRouter({
       component: () => import("@/views/WishlistView.vue"),
     },
     {
-      path: "/category/:slug(men|women|kids)",
-      name: "category",
-      component: () => import("@/views/CategoryLandingView.vue"),
-    },
-    {
       path: "/catalogue",
       name: "catalogue",
       component: () => import("@/views/CatalogueView.vue"),
@@ -52,6 +48,27 @@ const router = createRouter({
       path: "/checkout",
       name: "checkout",
       component: () => import("@/views/CheckoutView.vue"),
+    },
+    {
+      path: "/account/login",
+      name: "login",
+      component: () => import("@/views/account/LoginView.vue"),
+    },
+    {
+      path: "/account/register",
+      name: "register",
+      component: () => import("@/views/account/RegisterView.vue"),
+    },
+    {
+      path: "/account",
+      name: "account",
+      component: () => import("@/views/account/AccountView.vue"),
+      beforeEnter: (to) => {
+        if (!store.getters["auth/isAuthenticated"]) {
+          return { name: "login", query: { redirect: to.fullPath } };
+        }
+        return true;
+      },
     },
     {
       path: "/checkout/confirmation",
