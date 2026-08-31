@@ -10,6 +10,7 @@ app.use(router);
 app.mount("#app");
 
 store.dispatch("catalogue/fetchInitial");
+store.dispatch("checkout/fetchFreeDelivery");
 if (store.getters["auth/isAuthenticated"]) {
   store.dispatch("wishlist/fetchWishlist");
 }

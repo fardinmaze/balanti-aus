@@ -8,13 +8,21 @@
  * fallbacks — verify against a live response and adjust if names differ.
  */
 
+/**
+ * Verified against a live response — there is no `parent` field at all,
+ * contrary to guide §5.1. `/all-categories` returns top-level rows with their
+ * children nested one level deep in `subcategories`; `/top-categories`
+ * returns the same top-level rows with `subcategories` simply absent. See
+ * src/lib/category.ts for how this gets flattened for the rest of the app.
+ */
 export type BackendCategory = {
   id: number;
   name: string;
   slug: string;
-  /** 0 = top-level; otherwise the id of the parent Category row (guide §5.1). */
-  parent: number;
+  description?: string;
   image?: string | null;
+  featured?: boolean;
+  subcategories?: BackendCategory[];
 };
 
 export type BackendProductVariation = {
@@ -67,6 +75,31 @@ export type BackendProduct = {
   hot_item?: boolean;
   is_featured?: boolean;
   [extra: string]: unknown;
+};
+
+/** Verified against a live GET /system/settings/shop-contact-info response (public — no auth required despite the guide listing it as Staff JWT). */
+export type ShopContactInfo = {
+  id?: number;
+  email_address: string;
+  phone_number: string;
+  billing_address?: Record<string, unknown>;
+  shipping_address?: Record<string, unknown>;
+};
+
+/** Verified against a live GET /site-api/social-links response — all four keys are always present, null when not set. */
+export type SocialLinks = {
+  facebook: string | null;
+  twitter: string | null;
+  instagram: string | null;
+  linkedin: string | null;
+};
+
+/** Verified against a live GET /cms/aboutus/view response. `values` is the literal string "No VALUE" when unset on the backend (a sentinel, not real content) — guard for that rather than just falsy. */
+export type AboutUs = {
+  id?: number;
+  about?: string;
+  mission?: { title?: string; description?: string } | string;
+  values?: string | string[];
 };
 
 export type BackendCustomer = {

@@ -1,11 +1,15 @@
 <script setup lang="ts">
+import { computed } from "vue";
 import { RouterLink } from "vue-router";
 import { useCart } from "@/lib/cart";
+import { useFreeShippingLine } from "@/lib/freeDelivery";
 import PriceTag from "@/components/ui/Price.vue";
 import BaseButton from "@/components/ui/BaseButton.vue";
 import PlaceholderImage from "@/components/ui/PlaceholderImage.vue";
 
 const cart = useCart();
+const freeShippingLine = useFreeShippingLine();
+const reassuranceLine = computed(() => [freeShippingLine.value, "— Australia-wide"].filter(Boolean).join(" "));
 </script>
 
 <template>
@@ -89,7 +93,7 @@ const cart = useCart();
             <PriceTag :amount="cart.subtotal.value" class="text-base font-semibold" />
           </div>
           <BaseButton to="/checkout" class="w-full !text-white" @click="cart.closeCart()">Checkout</BaseButton>
-          <p class="mt-3 text-center text-xs text-muted">Free shipping over $150 · Free 30-day returns</p>
+          <p v-if="reassuranceLine" class="mt-3 text-center text-xs text-muted">{{ reassuranceLine }}</p>
         </div>
       </aside>
     </Transition>

@@ -5,23 +5,35 @@ import { useRouter } from "vue-router";
 import { useCart } from "@/lib/cart";
 import { useCheckout } from "@/lib/checkout";
 import { useAuth } from "@/lib/auth";
+import { useAddress, addressLines } from "@/lib/address";
 import { ApiError } from "@/api/http";
-import type { PaymentMethod, ShippingMethod } from "@/api/types";
+import type { AddressShape } from "@/api/address";
+import type { PlaceOrderPayload } from "@/api/checkout";
+import type { ShippingMethod } from "@/api/types";
 import type { CartLine } from "@/store/modules/cart";
 import PlaceholderImage from "@/components/ui/PlaceholderImage.vue";
 import PriceTag from "@/components/ui/Price.vue";
+import BaseButton from "@/components/ui/BaseButton.vue";
 
 const cart = useCart();
 const checkout = useCheckout();
 const auth = useAuth();
+const address = useAddress();
 const router = useRouter();
 
-onMounted(() => checkout.fetchConfig());
+onMounted(() => {
+  checkout.fetchConfig();
+  if (auth.isAuthenticated.value) address.fetchAddresses();
+});
 
-const freeShippingThreshold = computed(() => checkout.freeDelivery.value?.amount ?? 150);
-const qualifiesForFreeShipping = computed(
-  () => cart.subtotal.value >= freeShippingThreshold.value || cart.subtotal.value === 0
-);
+// null (not 150, or any other guessed number) until GET /site-api/free-delivery
+// actually resolves — a stale/guessed default previously made carts between the
+// old and new threshold (e.g. $200-$400 vs a real $500 limit) wrongly qualify.
+const freeShippingThreshold = computed(() => checkout.freeDelivery.value?.amount ?? null);
+const qualifiesForFreeShipping = computed(() => {
+  if (freeShippingThreshold.value === null) return false;
+  return cart.subtotal.value >= freeShippingThreshold.value || cart.subtotal.value === 0;
+});
 
 const selectedShippingId = ref<number | null>(null);
 watch(
@@ -33,10 +45,14 @@ watch(
   }
 );
 
+// Guests can't load real shipping methods (GET /shipping-methods requires a
+// Customer JWT and 401s for them) — flat fallback instead of silently
+// defaulting to $0/"Free" whenever no method is available to price from.
+const STATIC_DELIVERY_FEE = 50;
 const shippingAmount = computed(() => {
   if (qualifiesForFreeShipping.value) return 0;
   const method = checkout.shippingMethods.value.find((m: ShippingMethod) => m.id === selectedShippingId.value);
-  return method?.amount ?? method?.price ?? 0;
+  return method?.amount ?? method?.price ?? STATIC_DELIVERY_FEE;
 });
 const shippingType = computed(() => (qualifiesForFreeShipping.value ? 0 : (selectedShippingId.value ?? 0)));
 
@@ -84,15 +100,36 @@ const discountAmount = computed(() => {
   return Math.min(amount, cart.subtotal.value);
 });
 
-const total = computed(() => cart.subtotal.value - discountAmount.value + shippingAmount.value);
+// GET /site-api/vat-status → { vat, inclusive }. Inclusive: line.price already
+// carries GST, so it's just extracted for display/the order payload — nothing
+// is added to the total. Exclusive: line.price is ex-GST, so GST is computed
+// on top (using the store-wide vat % from vat-status, not the per-product
+// Product.vat field) and added to the total.
+const vatInclusive = computed(() => checkout.vat.value?.inclusive ?? true);
+const vatRate = computed(() => checkout.vat.value?.vat ?? 0);
 
-const gstIncluded = computed(() =>
-  cart.lines.value.reduce((sum: number, line: CartLine) => {
+function lineVatRate(line: CartLine) {
+  return vatInclusive.value ? line.vat : vatRate.value;
+}
+
+function lineVatTotal(line: CartLine) {
+  if (vatInclusive.value) {
     const rate = line.price / (1 + line.vat / 100);
-    return sum + (line.price - rate) * line.qty;
-  }, 0)
-);
+    return (line.price - rate) * line.qty;
+  }
+  return line.price * (vatRate.value / 100) * line.qty;
+}
 
+const gstIncluded = computed(() => cart.lines.value.reduce((sum: number, line: CartLine) => sum + lineVatTotal(line), 0));
+
+const total = computed(() => {
+  const base = cart.subtotal.value - discountAmount.value + shippingAmount.value;
+  return vatInclusive.value ? base : base + gstIncluded.value;
+});
+
+// Guest checkout only — the backend reads `customer_data` solely when there's
+// no Authorization header (guide §5.4); logged-in orders carry an `address`
+// row id instead (see below).
 const form = reactive({
   email: "",
   firstName: "",
@@ -104,60 +141,82 @@ const form = reactive({
   phone: "",
 });
 
-type Step = "delivery" | "payment" | "review";
-const STEPS: Step[] = ["delivery", "payment", "review"];
-const stepIndex = ref(0);
+const deliveryNote = ref("");
 
-function statusOf(step: Step): "active" | "complete" | "upcoming" {
-  const i = STEPS.indexOf(step);
-  if (i < stepIndex.value) return "complete";
-  if (i === stepIndex.value) return "active";
-  return "upcoming";
-}
+// Logged-in checkout: pick a saved address book row (defaulting to the
+// customer's `is_default` one), or add a new one inline.
+const visibleAddresses = computed(() => address.addresses.value.filter((a) => addressLines(a.address).length > 0));
+const selectedAddressId = ref<number | null>(null);
+const addingAddress = ref(false);
 
-const deliveryComplete = computed(
-  () =>
-    !!(
-      form.email.trim() &&
-      form.firstName.trim() &&
-      form.lastName.trim() &&
-      form.address.trim() &&
-      form.suburb.trim() &&
-      form.state.trim() &&
-      form.postcode.trim() &&
-      form.phone.trim()
-    )
+watch(
+  visibleAddresses,
+  (list) => {
+    if (!auth.isAuthenticated.value) return;
+    if (selectedAddressId.value !== null && list.some((a) => a.id === selectedAddressId.value)) return;
+    const preferred = list.find((a) => a.is_default) ?? list[0];
+    if (preferred) {
+      selectedAddressId.value = preferred.id;
+      addingAddress.value = false;
+    } else {
+      selectedAddressId.value = null;
+      addingAddress.value = true;
+    }
+  },
+  { immediate: true }
 );
 
-const paymentComplete = computed(() => selectedPaymentId.value !== null);
+const selectedAddress = computed(() => visibleAddresses.value.find((a) => a.id === selectedAddressId.value));
+
+function emptyAddressForm(): AddressShape {
+  return { full_name: "", line1: "", line2: "", suburb: "", state: "", postcode: "", country: "Australia", phone: "" };
+}
+const newAddressForm = reactive(emptyAddressForm());
+const newAddressSaving = ref(false);
+const newAddressError = ref("");
+
+function startAddingAddress() {
+  Object.assign(newAddressForm, emptyAddressForm());
+  newAddressError.value = "";
+  addingAddress.value = true;
+}
+
+function cancelAddingAddress() {
+  addingAddress.value = false;
+  newAddressError.value = "";
+}
+
+async function saveNewAddress() {
+  newAddressSaving.value = true;
+  newAddressError.value = "";
+  try {
+    const created = await address.addAddress({ ...newAddressForm });
+    if (created) {
+      selectedAddressId.value = created.id;
+      addingAddress.value = false;
+    }
+  } catch (e) {
+    newAddressError.value = e instanceof ApiError ? e.message : "Couldn't save that address.";
+  } finally {
+    newAddressSaving.value = false;
+  }
+}
+
+const deliveryComplete = computed(() => {
+  if (auth.isAuthenticated.value) return selectedAddressId.value !== null && !addingAddress.value;
+  return !!(
+    form.email.trim() &&
+    form.firstName.trim() &&
+    form.lastName.trim() &&
+    form.address.trim() &&
+    form.suburb.trim() &&
+    form.state.trim() &&
+    form.postcode.trim() &&
+    form.phone.trim()
+  );
+});
 
 const formError = ref("");
-
-function continueToPayment() {
-  if (!deliveryComplete.value) {
-    formError.value = "Fill in every delivery field to continue.";
-    return;
-  }
-  formError.value = "";
-  stepIndex.value = 1;
-}
-
-function continueToReview() {
-  if (!paymentComplete.value) {
-    formError.value = "Choose a payment method to continue.";
-    return;
-  }
-  formError.value = "";
-  stepIndex.value = 2;
-}
-
-function editStep(step: Step) {
-  stepIndex.value = STEPS.indexOf(step);
-}
-
-const selectedPaymentMethod = computed(() =>
-  checkout.paymentMethods.value.find((m: PaymentMethod) => m.id === selectedPaymentId.value)
-);
 
 function todayIso() {
   return new Date().toISOString().slice(0, 10);
@@ -171,8 +230,12 @@ function inDaysIso(days: number) {
 
 async function placeOrder() {
   formError.value = "";
+  if (!deliveryComplete.value) {
+    formError.value = "Fill in every delivery field before placing your order.";
+    return;
+  }
   try {
-    const result = await checkout.placeOrder({
+    const payload: PlaceOrderPayload = {
       order_data: {
         so_date: todayIso(),
         shipment_date: inDaysIso(3),
@@ -182,6 +245,7 @@ async function placeOrder() {
       order_cart: {
         shipping_type: shippingType.value,
         payment_type: selectedPaymentId.value ?? 0,
+        delivery_note: deliveryNote.value.trim(),
         discount_type: couponApplied.value?.type ?? null,
         discount_value: couponApplied.value?.value ?? 0,
         discount_amount: discountAmount.value,
@@ -192,29 +256,45 @@ async function placeOrder() {
         adjustment: 0,
         subtotal: cart.subtotal.value,
         total: total.value,
-        cart_items: cart.lines.value.map((line: CartLine) => {
-          const rate = line.price / (1 + line.vat / 100);
-          const vatTotal = (line.price - rate) * line.qty;
-          return {
-            item_id: line.itemId,
-            quantity: line.qty,
-            product_price: line.price,
-            vat: line.vat,
-            vat_total: vatTotal,
-          };
-        }),
+        cart_items: cart.lines.value.map((line: CartLine) => ({
+          item_id: line.itemId,
+          quantity: line.qty,
+          product_price: line.price,
+          vat: lineVatRate(line),
+          vat_total: lineVatTotal(line),
+        })),
       },
-      address: 0,
+      // Logged in: a real address-book row id (or 0 for the account's default).
+      // Guest: always 0 — there's no address book to point at.
+      address: auth.isAuthenticated.value ? (selectedAddressId.value ?? 0) : 0,
       coupon_code: couponApplied.value ? couponCode.value.trim() : "",
-      customer_data: {
+    };
+
+    if (auth.isAuthenticated.value) {
+      // Sourced from the account + the selected address book row, not typed —
+      // the delivery step only asks a guest to fill this in by hand.
+      const addr = (selectedAddress.value?.address ?? {}) as Record<string, unknown>;
+      const user = auth.user.value;
+      payload.customer_data = {
+        full_name: String(addr.full_name ?? `${user?.first_name ?? ""} ${user?.last_name ?? ""}`.trim()),
+        email: user?.email_address ?? "",
+        phone: String(addr.phone ?? user?.phone_number ?? ""),
+        line1: String(addr.line1 ?? ""),
+        city: String(addr.suburb ?? ""),
+        area: String(addr.state ?? ""),
+      };
+    } else {
+      payload.customer_data = {
         full_name: `${form.firstName} ${form.lastName}`.trim(),
         email: form.email,
         phone: form.phone,
         line1: form.address,
         city: form.suburb,
         area: form.state,
-      },
-    });
+      };
+    }
+
+    const result = await checkout.placeOrder(payload);
 
     const orderId = result.order_id;
     const orderTotal = total.value;
@@ -249,33 +329,95 @@ const fieldClass =
           <RouterLink to="/account/login" class="underline">Sign in</RouterLink> for faster checkout next time.
         </p>
 
-        <div class="mt-12 grid gap-12 lg:grid-cols-[1fr_380px] lg:gap-20">
+        <div class="mt-12 grid gap-12 lg:grid-cols-[3fr_2fr] lg:gap-16">
           <div class="order-2 lg:order-1">
             <!-- Delivery -->
-            <div class="border-b border-line pb-8">
-              <div class="flex items-center justify-between">
-                <h2
-                  class="font-display text-xl font-semibold"
-                  :class="statusOf('delivery') === 'upcoming' && 'text-muted'"
-                >
-                  Delivery Details
-                </h2>
-                <button
-                  v-if="statusOf('delivery') === 'complete'"
-                  type="button"
-                  class="text-sm font-medium underline"
-                  @click="editStep('delivery')"
-                >
-                  Edit
-                </button>
+            <div>
+              <h2 class="font-display text-xl font-semibold">Delivery Details</h2>
+
+              <div class="mt-3">
+                <label for="deliveryNote" class="mb-2 block text-sm font-semibold">Delivery note (optional)</label>
+                <textarea
+                  id="deliveryNote"
+                  v-model="deliveryNote"
+                  rows="2"
+                  placeholder="e.g. Leave with building concierge, ring the doorbell twice…"
+                  class="w-full rounded-md border border-line bg-surface px-4 py-3 text-sm placeholder:text-muted"
+                />
               </div>
 
-              <p v-if="statusOf('delivery') === 'complete'" class="mt-3 text-sm text-muted">
-                {{ form.firstName }} {{ form.lastName }} · {{ form.address }}, {{ form.suburb }} {{ form.state }}
-                {{ form.postcode }}
-              </p>
+              <!-- Logged in: pick a saved address, defaulting to is_default -->
+              <div v-if="auth.isAuthenticated.value" class="mt-3">
+                <p v-if="address.loading.value && !visibleAddresses.length" class="text-sm text-muted">
+                  Loading your addresses…
+                </p>
 
-              <form v-if="statusOf('delivery') === 'active'" class="mt-6" @submit.prevent="continueToPayment">
+                <div v-if="visibleAddresses.length && !addingAddress" class="space-y-3">
+                  <label
+                    v-for="addr in visibleAddresses"
+                    :key="addr.id"
+                    class="flex cursor-pointer items-start gap-3 rounded-md border p-4 text-sm"
+                    :class="selectedAddressId === addr.id ? 'border-ink' : 'border-line'"
+                  >
+                    <input
+                      v-model="selectedAddressId"
+                      type="radio"
+                      name="deliveryAddress"
+                      :value="addr.id"
+                      class="mt-1 h-4 w-4 accent-[var(--ink)]"
+                    />
+                    <span class="flex-1">
+                      <span class="flex items-center gap-2 font-semibold">
+                        <span>{{ addressLines(addr.address)[0] }}</span>
+                        <span
+                          v-if="addr.is_default"
+                          class="rounded-full bg-ink px-2 py-0.5 text-xs font-medium text-white"
+                        >
+                          Default
+                        </span>
+                      </span>
+                      <span v-for="(line, i) in addressLines(addr.address).slice(1)" :key="i" class="block text-muted">
+                        {{ line }}
+                      </span>
+                    </span>
+                  </label>
+
+                  <button type="button" class="text-sm font-semibold underline" @click="startAddingAddress">
+                    + Deliver to a different address
+                  </button>
+                </div>
+
+                <form v-if="addingAddress" class="space-y-4" :class="visibleAddresses.length && 'mt-4'" @submit.prevent="saveNewAddress">
+                  <input v-model="newAddressForm.full_name" type="text" required placeholder="Full Name*" :class="fieldClass" />
+                  <input v-model="newAddressForm.line1" type="text" required placeholder="Street Address*" :class="fieldClass" />
+                  <input v-model="newAddressForm.line2" type="text" placeholder="Apt / Suite" :class="fieldClass" />
+                  <div class="grid gap-4 sm:grid-cols-3">
+                    <input v-model="newAddressForm.suburb" type="text" required placeholder="Suburb*" :class="fieldClass" />
+                    <input v-model="newAddressForm.state" type="text" required placeholder="State*" :class="fieldClass" />
+                    <input
+                      v-model="newAddressForm.postcode"
+                      type="text"
+                      inputmode="numeric"
+                      required
+                      placeholder="Postcode*"
+                      :class="fieldClass"
+                    />
+                  </div>
+                  <input v-model="newAddressForm.phone" type="tel" required placeholder="Phone*" :class="fieldClass" />
+                  <p v-if="newAddressError" class="text-sm text-sale" role="alert">{{ newAddressError }}</p>
+                  <div class="flex gap-3">
+                    <BaseButton type="submit" :disabled="newAddressSaving">
+                      {{ newAddressSaving ? "Saving…" : "Save address" }}
+                    </BaseButton>
+                    <BaseButton v-if="visibleAddresses.length" type="button" variant="ghost" @click="cancelAddingAddress">
+                      Cancel
+                    </BaseButton>
+                  </div>
+                </form>
+              </div>
+
+              <!-- Guest: type the delivery address by hand -->
+              <div v-else class="mt-6">
                 <div class="grid gap-4">
                   <div>
                     <label for="email" class="sr-only">Email</label>
@@ -343,160 +485,7 @@ const fieldClass =
                     <input id="phone" v-model="form.phone" type="tel" required placeholder="Phone Number*" :class="fieldClass" />
                   </div>
                 </div>
-
-                <p v-if="formError" class="mt-4 text-sm text-sale" role="alert">{{ formError }}</p>
-
-                <div class="mt-8 flex justify-end">
-                  <button
-                    type="submit"
-                    class="min-h-[var(--tap-min)] rounded-pill bg-ink px-8 text-sm font-semibold text-white transition-opacity hover:opacity-90"
-                  >
-                    Save &amp; Continue
-                  </button>
-                </div>
-              </form>
-            </div>
-
-            <!-- Shipping & Payment -->
-            <div class="border-b border-line py-8">
-              <div class="flex items-center justify-between">
-                <h2
-                  class="font-display text-xl font-semibold"
-                  :class="statusOf('payment') === 'upcoming' && 'text-muted'"
-                >
-                  Shipping &amp; Payment
-                </h2>
-                <button
-                  v-if="statusOf('payment') === 'complete'"
-                  type="button"
-                  class="text-sm font-medium underline"
-                  @click="editStep('payment')"
-                >
-                  Edit
-                </button>
               </div>
-
-              <p v-if="statusOf('payment') === 'complete'" class="mt-3 text-sm text-muted">
-                {{ selectedPaymentMethod?.name ?? "Payment method" }}
-              </p>
-
-              <template v-if="statusOf('payment') === 'active'">
-                <div class="mt-6">
-                  <p class="eyebrow mb-3">Shipping method</p>
-                  <p v-if="qualifiesForFreeShipping" class="text-sm">Free Delivery — arrives in 3–5 business days</p>
-                  <div v-else-if="checkout.shippingMethods.value.length" class="space-y-2">
-                    <label
-                      v-for="method in checkout.shippingMethods.value"
-                      :key="method.id"
-                      class="flex min-h-[var(--tap-min)] items-center justify-between rounded-md border border-line px-4 text-sm"
-                    >
-                      <span class="flex items-center gap-3">
-                        <input v-model="selectedShippingId" type="radio" :value="method.id" name="shipping" />
-                        {{ method.name }}
-                      </span>
-                      <PriceTag :amount="method.amount ?? method.price ?? 0" />
-                    </label>
-                  </div>
-                  <p v-else class="text-sm text-muted">
-                    You're ${{ (freeShippingThreshold - cart.subtotal.value).toFixed(0) }} away from free delivery.
-                  </p>
-                </div>
-
-                <div class="mt-6">
-                  <p class="eyebrow mb-3">Payment method</p>
-                  <div v-if="checkout.paymentMethods.value.length" class="space-y-2">
-                    <label
-                      v-for="method in checkout.paymentMethods.value"
-                      :key="method.id"
-                      class="flex min-h-[var(--tap-min)] items-center gap-3 rounded-md border border-line px-4 text-sm"
-                    >
-                      <input v-model="selectedPaymentId" type="radio" :value="method.id" name="payment" />
-                      {{ method.name }}
-                    </label>
-                    <p class="text-xs text-muted">Online payment isn't available yet — pay when your order arrives.</p>
-                  </div>
-                  <p v-else class="text-sm text-muted">No payment methods are available right now.</p>
-                </div>
-
-                <div class="mt-6">
-                  <p class="eyebrow mb-3">Coupon code</p>
-                  <div v-if="couponApplied" class="flex items-center justify-between rounded-md border border-line px-4 py-3 text-sm">
-                    <span>{{ couponCode }} applied</span>
-                    <button type="button" class="underline" @click="removeCoupon">Remove</button>
-                  </div>
-                  <div v-else class="flex gap-3">
-                    <input v-model="couponCode" type="text" placeholder="Enter code" :class="fieldClass" />
-                    <button
-                      type="button"
-                      class="shrink-0 rounded-md border border-line px-5 text-sm font-semibold disabled:opacity-50"
-                      :disabled="couponLoading || !couponCode.trim()"
-                      @click="applyCoupon"
-                    >
-                      {{ couponLoading ? "Checking…" : "Apply" }}
-                    </button>
-                  </div>
-                  <p v-if="couponError" class="mt-2 text-sm text-sale" role="alert">{{ couponError }}</p>
-                </div>
-
-                <p v-if="formError" class="mt-4 text-sm text-sale" role="alert">{{ formError }}</p>
-
-                <div class="mt-8 flex justify-end">
-                  <button
-                    type="button"
-                    class="min-h-[var(--tap-min)] rounded-pill bg-ink px-8 text-sm font-semibold text-white transition-opacity hover:opacity-90"
-                    @click="continueToReview"
-                  >
-                    Save &amp; Continue
-                  </button>
-                </div>
-              </template>
-            </div>
-
-            <!-- Order Review -->
-            <div class="pt-8">
-              <h2
-                class="font-display text-xl font-semibold"
-                :class="statusOf('review') === 'upcoming' && 'text-muted'"
-              >
-                Order Review
-              </h2>
-
-              <template v-if="statusOf('review') === 'active'">
-                <div class="mt-6 space-y-4 text-sm">
-                  <div class="flex justify-between border-b border-line pb-4">
-                    <div>
-                      <p class="eyebrow">Deliver to</p>
-                      <p class="mt-1">
-                        {{ form.firstName }} {{ form.lastName }} · {{ form.address }}, {{ form.suburb }}
-                        {{ form.state }} {{ form.postcode }}
-                      </p>
-                    </div>
-                    <button type="button" class="shrink-0 font-medium underline" @click="editStep('delivery')">
-                      Edit
-                    </button>
-                  </div>
-                  <div class="flex justify-between border-b border-line pb-4">
-                    <div>
-                      <p class="eyebrow">Payment</p>
-                      <p class="mt-1">{{ selectedPaymentMethod?.name ?? "—" }}</p>
-                    </div>
-                    <button type="button" class="shrink-0 font-medium underline" @click="editStep('payment')">
-                      Edit
-                    </button>
-                  </div>
-                </div>
-
-                <p v-if="formError" class="mt-4 text-sm text-sale" role="alert">{{ formError }}</p>
-
-                <button
-                  type="button"
-                  class="mt-8 min-h-[var(--tap-min)] w-full rounded-pill bg-accent px-6 text-sm font-semibold !text-white transition-opacity hover:opacity-90 disabled:opacity-60"
-                  :disabled="checkout.placing.value"
-                  @click="placeOrder"
-                >
-                  {{ checkout.placing.value ? "Placing order…" : `Place Order — ${new Intl.NumberFormat("en-AU", { style: "currency", currency: "AUD" }).format(total)}` }}
-                </button>
-              </template>
             </div>
           </div>
 
@@ -504,6 +493,26 @@ const fieldClass =
             <div class="flex items-center justify-between">
               <h2 class="text-lg font-semibold">In Your Bag</h2>
               <RouterLink to="/cart" class="text-sm font-medium underline">Edit</RouterLink>
+            </div>
+
+            <div class="mt-4">
+              <p class="eyebrow mb-3">Coupon code</p>
+              <div v-if="couponApplied" class="flex items-center justify-between rounded-md border border-line px-4 py-3 text-sm">
+                <span>{{ couponCode }} applied</span>
+                <button type="button" class="underline" @click="removeCoupon">Remove</button>
+              </div>
+              <div v-else class="flex gap-3">
+                <input v-model="couponCode" type="text" placeholder="Enter code" :class="fieldClass" />
+                <button
+                  type="button"
+                  class="shrink-0 rounded-md border border-line px-5 text-sm font-semibold disabled:opacity-50"
+                  :disabled="couponLoading || !couponCode.trim()"
+                  @click="applyCoupon"
+                >
+                  {{ couponLoading ? "Checking…" : "Apply" }}
+                </button>
+              </div>
+              <p v-if="couponError" class="mt-2 text-sm text-sale" role="alert">{{ couponError }}</p>
             </div>
 
             <div class="mt-4 space-y-2 text-sm">
@@ -520,12 +529,27 @@ const fieldClass =
                 <span v-if="shippingAmount === 0">Free</span>
                 <PriceTag v-else :amount="shippingAmount" />
               </div>
+              <div v-if="!vatInclusive" class="flex justify-between">
+                <span>GST</span>
+                <PriceTag :amount="gstIncluded" />
+              </div>
               <div class="flex justify-between border-t border-line pt-2 text-base font-semibold">
                 <span>Total</span>
                 <PriceTag :amount="total" />
               </div>
-              <p class="text-xs text-muted">Includes <PriceTag :amount="gstIncluded" /> GST</p>
+              <p v-if="vatInclusive" class="text-xs text-muted">Includes <PriceTag :amount="gstIncluded" /> GST</p>
             </div>
+
+            <p v-if="formError" class="mt-4 text-sm text-sale" role="alert">{{ formError }}</p>
+
+            <button
+              type="button"
+              class="mt-4 min-h-[var(--tap-min)] w-full rounded-pill bg-accent px-6 text-sm font-semibold !text-white transition-opacity hover:opacity-90 disabled:opacity-60"
+              :disabled="checkout.placing.value"
+              @click="placeOrder"
+            >
+              {{ checkout.placing.value ? "Placing order…" : `Place Order — ${new Intl.NumberFormat("en-AU", { style: "currency", currency: "AUD" }).format(total)}` }}
+            </button>
 
             <div class="mt-5 border-t border-line pt-5">
               <p v-if="shippingAmount === 0" class="text-sm font-semibold">Free shipping — arrives in 3–5 business days</p>

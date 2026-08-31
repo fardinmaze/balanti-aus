@@ -3,6 +3,7 @@ import { computed, onMounted, reactive, ref } from "vue";
 import { useRouter } from "vue-router";
 import { useStore } from "@/store";
 import { useAuth } from "@/lib/auth";
+import { addressLines } from "@/lib/address";
 import { ApiError } from "@/api/http";
 import BaseButton from "@/components/ui/BaseButton.vue";
 
@@ -72,20 +73,6 @@ const addressForm = reactive(emptyAddressForm());
 const addressSaving = ref(false);
 const addressError = ref("");
 const editingAddressId = ref<number | null>(null);
-
-function addressLines(raw: unknown): string[] {
-  if (!raw || typeof raw !== "object") return [];
-  const a = raw as Record<string, unknown>;
-  const lines: string[] = [];
-  if (a.full_name) lines.push(String(a.full_name));
-  const street = [a.line1, a.line2].filter(Boolean).join(", ");
-  if (street) lines.push(street);
-  const locality = [a.suburb, a.state, a.postcode].filter(Boolean).join(" ");
-  if (locality) lines.push(locality);
-  if (a.country) lines.push(String(a.country));
-  if (a.phone) lines.push(String(a.phone));
-  return lines;
-}
 
 const visibleAddresses = computed(() => addresses.value.filter((a) => addressLines(a.address).length > 0));
 

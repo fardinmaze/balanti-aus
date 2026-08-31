@@ -1,4 +1,16 @@
 <script setup lang="ts">
+import { onMounted, ref } from "vue";
+import { policies, policiesLastUpdated } from "@/content/policies";
+import { settingsApi } from "@/api/settings";
+import type { ShopContactInfo } from "@/api/types";
+
+const FALLBACK_EMAIL = "hello@balanti.com.au";
+
+const contactInfo = ref<ShopContactInfo | null>(null);
+onMounted(async () => {
+  contactInfo.value = (await settingsApi.shopContactInfo().catch(() => null)) ?? null;
+});
+
 const sizeChart = [
   { uk: "UK 6", au: "AU 7", cm: "24.5 cm" },
   { uk: "UK 7", au: "AU 8", cm: "25.5 cm" },
@@ -29,29 +41,7 @@ const faqs = [
   <section class="!pt-8 sm:!pt-12">
     <div class="container max-w-3xl text-center">
       <h1>Support</h1>
-      <p class="mt-2 text-muted">Shipping, returns, sizing, and how to reach us.</p>
-    </div>
-  </section>
-
-  <section id="shipping" class="!pt-0">
-    <div class="container max-w-3xl">
-      <h2>Shipping</h2>
-      <ul class="space-y-2 text-muted">
-        <li>Free standard shipping on orders over $150 AUD, Australia-wide.</li>
-        <li>Orders are packed and dispatched from within Australia.</li>
-        <li>A tracking link is emailed as soon as your order ships.</li>
-      </ul>
-    </div>
-  </section>
-
-  <section id="returns" class="!pt-0">
-    <div class="container max-w-3xl">
-      <h2>Returns</h2>
-      <ul class="space-y-2 text-muted">
-        <li>Free returns within 30 days of delivery.</li>
-        <li>Shoes must be unworn, in original packaging, with tags attached.</li>
-        <li>Refunds are issued to the original payment method once the return is received.</li>
-      </ul>
+      <p class="mt-2 text-muted">Size guide, FAQ, Policies, and how to reach us.</p>
     </div>
   </section>
 
@@ -92,13 +82,53 @@ const faqs = [
     </div>
   </section>
 
+  <section id="policies" class="!pt-0">
+    <div class="container max-w-3xl">
+      <h2>Policies</h2>
+      <p class="text-muted">Privacy, cookies, terms, delivery, returns and payment — the full detail behind the summaries above.</p>
+      <p class="mt-1 text-xs text-muted">Last updated {{ policiesLastUpdated }}</p>
+
+      <div class="mt-4 rounded-md border border-line bg-surface p-4 text-sm text-muted">
+        This policy set is a working draft: business details such as our registered entity, ABN, postal address,
+        phone number and business hours are still bracketed placeholders below and are not yet finalised.
+      </div>
+
+      <div class="mt-8 divide-y divide-line border-t border-line">
+        <details v-for="policy in policies" :key="policy.id" :id="policy.id" class="py-6">
+          <summary class="cursor-pointer font-display text-lg font-semibold sm:text-xl">
+            {{ policy.title }}
+          </summary>
+          <p class="mt-2 text-sm text-muted">{{ policy.summary }}</p>
+
+          <div class="mt-6 space-y-6">
+            <div v-for="block in policy.blocks" :key="block.heading">
+              <h3 class="text-sm font-semibold">{{ block.heading }}</h3>
+              <p v-for="(paragraph, i) in block.paragraphs" :key="i" class="mt-2 text-sm text-muted">
+                {{ paragraph }}
+              </p>
+              <ul v-if="block.list" class="mt-2 list-disc space-y-1.5 pl-5 text-sm text-muted">
+                <li v-for="(item, i) in block.list" :key="i">{{ item }}</li>
+              </ul>
+            </div>
+          </div>
+        </details>
+      </div>
+    </div>
+  </section>
+
   <section id="contact" class="!pt-0">
     <div class="container max-w-3xl">
       <h2>Contact</h2>
       <p class="text-muted">
         Questions about an order or a style? Email
-        <a href="mailto:hello@balanti.com.au" class="underline">hello@balanti.com.au</a> and we'll get back to you
-        within one business day.
+        <a :href="`mailto:${contactInfo?.email_address ?? FALLBACK_EMAIL}`" class="font-semibold">{{
+          contactInfo?.email_address ?? FALLBACK_EMAIL
+        }}</a>
+        <template v-if="contactInfo?.phone_number">
+          or call
+          <a :href="`tel:${contactInfo.phone_number}`" class="font-semibold">{{ contactInfo.phone_number }}</a>
+        </template>
+        and we'll get back to you within one business day.
       </p>
     </div>
   </section>

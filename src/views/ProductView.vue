@@ -3,6 +3,7 @@ import { computed, ref, watch } from "vue";
 import { useRoute } from "vue-router";
 import { useCatalogue } from "@/lib/catalogue";
 import { reassurance } from "@/content/copy";
+import { useFreeShippingLine } from "@/lib/freeDelivery";
 import { useWishlist } from "@/lib/wishlist";
 import type { Product } from "@/types/product";
 import Gallery from "@/components/product/Gallery.vue";
@@ -35,11 +36,14 @@ async function load(handle: string) {
 }
 
 watch(() => route.params.handle, (handle) => load(String(handle)), { immediate: true });
+
+const freeShippingLine = useFreeShippingLine();
+const reassuranceItems = computed(() => [freeShippingLine.value, '— Australia-wide']);
 </script>
 
 <template>
   <section v-if="product" class="!pt-8 sm:!pt-12">
-    <div class="container grid gap-10 lg:grid-cols-2 lg:gap-16">
+    <div class="container grid gap-10 lg:grid-cols-[minmax(0,520px)_1fr] lg:gap-16">
       <Gallery :product="product" />
 
       <div>
@@ -76,7 +80,7 @@ watch(() => route.params.handle, (handle) => load(String(handle)), { immediate: 
         </ul>
 
         <ul class="mt-6 flex flex-wrap gap-x-4 gap-y-1">
-          <li v-for="item in reassurance" :key="item" class="text-xs text-muted">{{ item }}</li>
+          <li v-for="item in reassuranceItems" :key="item" class="text-xs text-muted">{{ item }}</li>
         </ul>
       </div>
     </div>

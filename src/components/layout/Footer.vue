@@ -1,11 +1,36 @@
 <script setup lang="ts">
+import { computed, onMounted, ref } from "vue";
 import { RouterLink } from "vue-router";
-import { footerLinks, utilityMessage } from "@/content/nav";
+import { footerLinks, freeReturnsMessage } from "@/content/nav";
+import { useFreeShippingLine } from "@/lib/freeDelivery";
 import { brand } from "@/content/copy";
 import { useCatalogue } from "@/lib/catalogue";
+import { siteApi } from "@/api/site";
+import type { SocialLinks } from "@/api/types";
+import FacebookIcon from "@/components/ui/icons/FacebookIcon.vue";
+import InstagramIcon from "@/components/ui/icons/InstagramIcon.vue";
+import TwitterIcon from "@/components/ui/icons/TwitterIcon.vue";
+import LinkedinIcon from "@/components/ui/icons/LinkedinIcon.vue";
 
 const year = new Date().getFullYear();
 const catalogue = useCatalogue();
+
+const freeShippingLine = useFreeShippingLine();
+const utilityMessage = computed(() => [freeShippingLine.value, freeReturnsMessage].filter(Boolean).join(" "));
+
+const socialLinks = ref<SocialLinks | null>(null);
+onMounted(async () => {
+  socialLinks.value = (await siteApi.socialLinks().catch(() => null)) ?? null;
+});
+
+const socialIcons = { facebook: FacebookIcon, twitter: TwitterIcon, instagram: InstagramIcon, linkedin: LinkedinIcon };
+const activeSocialLinks = computed(() => {
+  const links = socialLinks.value;
+  if (!links) return [];
+  return (Object.keys(socialIcons) as (keyof SocialLinks)[])
+    .filter((platform) => links[platform])
+    .map((platform) => ({ platform, url: links[platform] as string, icon: socialIcons[platform] }));
+});
 </script>
 
 <template>
@@ -14,6 +39,20 @@ const catalogue = useCatalogue();
       <div>
         <p class="font-display text-lg font-semibold">{{ brand.name }}</p>
         <p class="mt-2 max-w-xs text-sm text-muted">{{ brand.tagline }}</p>
+
+        <div v-if="activeSocialLinks.length" class="mt-4 flex items-center gap-3">
+          <a
+            v-for="link in activeSocialLinks"
+            :key="link.platform"
+            :href="link.url"
+            target="_blank"
+            rel="noopener noreferrer"
+            :aria-label="link.platform"
+            class="flex h-9 w-9 items-center justify-center rounded-pill border border-line text-ink transition-opacity hover:opacity-70"
+          >
+            <component :is="link.icon" class="h-4 w-4" />
+          </a>
+        </div>
       </div>
 
       <div>
@@ -30,9 +69,6 @@ const catalogue = useCatalogue();
         <ul class="space-y-2">
           <li v-for="cat in catalogue.topCategories.value" :key="cat.id">
             <RouterLink :to="`/catalogue?category=${cat.slug}`" class="text-sm text-ink hover:opacity-70">{{ cat.name }}</RouterLink>
-          </li>
-          <li v-for="link in footerLinks.about" :key="link.href">
-            <RouterLink :to="link.href" class="text-sm text-ink hover:opacity-70">{{ link.label }}</RouterLink>
           </li>
         </ul>
       </div>

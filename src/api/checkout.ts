@@ -24,6 +24,7 @@ export type PlaceOrderPayload = {
   order_cart: {
     shipping_type: number;
     payment_type: number;
+    delivery_note?: string;
     discount_type: string | null;
     discount_value: number;
     discount_amount: number;

@@ -1,7 +1,7 @@
 @import "tailwindcss";
 @import "./design-tokens.css";
 
-/* Fraunces + Inter are loaded via <link> in index.html — they match the
+/* EB Garamond + Inter are loaded via <link> in index.html — they match the
    font-family names the heritage theme already references below, so no
    override is needed here; the static stacks are the fallback. */
 

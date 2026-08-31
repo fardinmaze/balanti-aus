@@ -16,6 +16,7 @@ export function useCheckout() {
     error: computed(() => store.state.checkout.error),
 
     fetchConfig: () => store.dispatch("checkout/fetchConfig"),
+    fetchFreeDelivery: () => store.dispatch("checkout/fetchFreeDelivery"),
     validateCoupon: (couponCode: string, cartAmount: number) =>
       store.dispatch("checkout/validateCoupon", { coupon_code: couponCode, cart_amount: cartAmount }),
     placeOrder: (payload: PlaceOrderPayload) => store.dispatch("checkout/placeOrder", payload),

@@ -66,13 +66,11 @@ function buyNow() {
       <p v-if="showSizeError" class="mt-2 text-sm text-sale" role="alert">Select a size to continue.</p>
     </fieldset>
 
-    <div class="mt-6 flex flex-col gap-3 sm:flex-row">
-      <BaseButton variant="ghost" class="flex-1" :disabled="!canAdd && showSizeError" @click="addToBag">
+    <div class="mt-6 flex max-w-sm flex-col gap-3 sm:flex-row">
+      <BaseButton variant="ghost" class="flex-1 !px-5 text-sm" :disabled="!canAdd && showSizeError" @click="addToBag">
         Add to bag
       </BaseButton>
-      <BaseButton class="flex-1" @click="buyNow">Buy now</BaseButton>
+      <BaseButton class="flex-1 !px-5 text-sm" @click="buyNow">Buy now</BaseButton>
     </div>
-
-    <p class="mt-3 text-xs text-muted">Cash on Delivery — pay when your order arrives.</p>
   </div>
 </template>

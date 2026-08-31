@@ -24,8 +24,5 @@ export const story = {
   ],
 };
 
-export const reassurance = [
-  "Free shipping over $150",
-  "Free 30-day returns",
-  "Afterpay available",
-];
+/** "Free shipping over $X" is prepended dynamically — see useFreeShippingLine(), driven by GET /site-api/free-delivery. */
+export const reassurance = ["Free 30-day returns", "Afterpay available"];

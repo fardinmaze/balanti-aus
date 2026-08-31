@@ -46,12 +46,10 @@ export const catalogueApi = {
   onSaleProducts: (count = 20) => paged<BackendProduct>("/site-api/super-sale-products", count),
   relatedProducts: (slug: string, count = 8) => paged<BackendProduct>(`/site-api/related-products/${slug}`, count),
 
-  categoryProducts: (categorySlug: string) =>
-    http.get<BackendProduct[]>(`/site-api/category-products/${categorySlug}`, { auth: false }).then((e) => e.data ?? []),
-  parentCategoryProducts: (categorySlug: string) =>
-    http
-      .get<BackendProduct[]>(`/site-api/parent-category-products/${categorySlug}`, { auth: false })
-      .then((e) => e.data ?? []),
+  categoryProducts: (categorySlug: string, count = 20, page = 1) =>
+    paged<BackendProduct>(`/site-api/category-products/${categorySlug}`, count, { page }),
+  parentCategoryProducts: (categorySlug: string, count = 20, page = 1) =>
+    paged<BackendProduct>(`/site-api/parent-category-products/${categorySlug}`, count, { page }),
 
   product: (slug: string) => http.get<BackendProduct>(`/site-api/product/${slug}`, { auth: false }).then((e) => e.data),
 

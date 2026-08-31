@@ -19,25 +19,54 @@ const router = useRouter();
 // The full category tree — including subcategories — drives the Category
 // filter here (GET /site-api/all-categories); the homepage tiles use only
 // top-categories. See FRONTEND_API_GUIDE.md §5.1.
+// `count` is required on category-products/parent-category-products or the
+// backend 400s — page through results 20 at a time, same as the other lists.
+const CATEGORY_PAGE_SIZE = 20;
+
 const selectedCategorySlug = ref<string | null>(null);
 const categoryScopedProducts = ref<Product[] | null>(null);
 const categoryLoading = ref(false);
+const categoryLoadingMore = ref(false);
+const categoryPage = ref(1);
+const categoryHasMore = ref(false);
+
+function categoryFetcher(slug: string) {
+  const category = catalogue.categories.value.find((c) => c.slug === slug);
+  if (!category) return null;
+  return isTopLevelCategory(category) ? catalogue.fetchParentCategoryProducts : catalogue.fetchCategoryProducts;
+}
 
 async function loadCategoryProducts(slug: string | null) {
+  categoryPage.value = 1;
+  categoryHasMore.value = false;
   if (!slug) {
     categoryScopedProducts.value = null;
     return;
   }
-  const category = catalogue.categories.value.find((c) => c.slug === slug);
-  if (!category) {
+  const fetcher = categoryFetcher(slug);
+  if (!fetcher) {
     categoryScopedProducts.value = [];
     return;
   }
   categoryLoading.value = true;
-  categoryScopedProducts.value = isTopLevelCategory(category)
-    ? await catalogue.fetchParentCategoryProducts(slug)
-    : await catalogue.fetchCategoryProducts(slug);
+  const { products, hasMore } = await fetcher(slug, CATEGORY_PAGE_SIZE, 1);
+  categoryScopedProducts.value = products;
+  categoryHasMore.value = hasMore;
   categoryLoading.value = false;
+}
+
+async function loadMoreCategoryProducts() {
+  const slug = selectedCategorySlug.value;
+  if (!slug || categoryLoadingMore.value || !categoryHasMore.value) return;
+  const fetcher = categoryFetcher(slug);
+  if (!fetcher) return;
+  categoryLoadingMore.value = true;
+  const nextPage = categoryPage.value + 1;
+  const { products, hasMore } = await fetcher(slug, CATEGORY_PAGE_SIZE, nextPage);
+  categoryScopedProducts.value = [...(categoryScopedProducts.value ?? []), ...products];
+  categoryPage.value = nextPage;
+  categoryHasMore.value = hasMore;
+  categoryLoadingMore.value = false;
 }
 
 watch(
@@ -83,6 +112,15 @@ function hydrateFromQuery() {
 }
 
 watch(() => route.query, hydrateFromQuery, { immediate: true });
+
+// Category product set loads async, so its price bounds land after hydrateFromQuery
+// already ran against the old (or empty) bounds. Re-clamp into the fresh range so a
+// stale priceMin/priceMax doesn't linger as a bogus "custom range" — which both hides
+// valid products and leaks pointless price_min/price_max params into the URL.
+watch([PRICE_MIN, PRICE_MAX], ([min, max]) => {
+  priceMin.value = Math.min(Math.max(priceMin.value, min), max);
+  priceMax.value = Math.max(Math.min(priceMax.value, max), min);
+});
 
 function syncQuery() {
   const query: Record<string, string> = {};
@@ -286,7 +324,7 @@ const chips = computed<Chip[]>(() => {
             />
           </FilterGroup>
 
-          <FilterGroup heading="Upper Material" :count="selectedMaterials.length">
+          <!-- <FilterGroup heading="Upper Material" :count="selectedMaterials.length">
             <label v-for="m in ALL_MATERIALS" :key="m" class="flex items-center gap-3 text-sm">
               <input
                 v-model="selectedMaterials"
@@ -297,7 +335,7 @@ const chips = computed<Chip[]>(() => {
               />
               {{ m }}
             </label>
-          </FilterGroup>
+          </FilterGroup> -->
         </aside>
 
         <div>
@@ -306,8 +344,23 @@ const chips = computed<Chip[]>(() => {
             No products match your filters yet.
             <button type="button" class="underline" @click="clearAll">Clear filters</button>
           </p>
-          <div v-else class="grid grid-cols-2 gap-[2px] sm:grid-cols-3" :class="!showFilters && 'lg:grid-cols-4'">
+          <div
+            v-else
+            class="grid grid-cols-2 gap-[2px] sm:grid-cols-3 xl:grid-cols-4"
+            :class="!showFilters && '2xl:grid-cols-5'"
+          >
             <ProductCard v-for="product in sorted" :key="product.handle" :product="product" />
+          </div>
+
+          <div v-if="selectedCategorySlug && categoryHasMore" class="mt-10 flex justify-center">
+            <button
+              type="button"
+              class="btn btn-ghost"
+              :disabled="categoryLoadingMore"
+              @click="loadMoreCategoryProducts"
+            >
+              {{ categoryLoadingMore ? "Loading…" : "Load more" }}
+            </button>
           </div>
         </div>
       </div>

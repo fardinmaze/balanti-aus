@@ -55,9 +55,13 @@ export const wishlist: Module<WishlistState, RootState> = {
       }
     },
 
-    async fetchWishlist({ commit }) {
+    async fetchWishlist({ commit, rootState }) {
       const backend = await wishlistApi.list();
-      commit("setItems", adaptProducts(backend));
+      // The wishlist row's own product payload is a lighter serializer than
+      // /products, /featured-products etc. and is missing on_sale/offer_price —
+      // prefer whatever fuller copy the catalogue already has cached by handle.
+      const products = adaptProducts(backend).map((p) => rootState.catalogue.byHandle[p.handle] ?? p);
+      commit("setItems", products);
     },
   },
   getters: {

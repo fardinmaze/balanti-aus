@@ -2,11 +2,13 @@ import type { Module } from "vuex";
 import { catalogueApi } from "@/api/catalogue";
 import type { BackendCategory } from "@/api/types";
 import { adaptProduct, adaptProducts } from "@/lib/productAdapter";
+import { flattenCategories, type FlatCategory } from "@/lib/category";
 import type { Product } from "@/types/product";
 import type { RootState } from "../types";
 
 export type CatalogueState = {
-  categories: BackendCategory[];
+  /** Flattened (top-level + subcategories) — see src/lib/category.ts. */
+  categories: FlatCategory[];
   topCategories: BackendCategory[];
   products: Product[];
   featured: Product[];
@@ -37,7 +39,7 @@ export const catalogue: Module<CatalogueState, RootState> = {
   namespaced: true,
   state: initialState,
   mutations: {
-    setCategories(state, categories: BackendCategory[]) {
+    setCategories(state, categories: FlatCategory[]) {
       state.categories = categories;
     },
     setTopCategories(state, topCategories: BackendCategory[]) {
@@ -86,7 +88,7 @@ export const catalogue: Module<CatalogueState, RootState> = {
           catalogueApi.featuredProducts(20),
           catalogueApi.onSaleProducts(20),
         ]);
-        commit("setCategories", categories);
+        commit("setCategories", flattenCategories(categories));
         commit("setTopCategories", topCategories);
         commit("setProducts", adaptProducts(products.results));
         commit("setFeatured", adaptProducts(featured.results));
@@ -109,20 +111,28 @@ export const catalogue: Module<CatalogueState, RootState> = {
       return product;
     },
 
-    /** Products filed directly under this exact category (guide §5.1). */
-    async fetchCategoryProducts({ commit }, categorySlug: string): Promise<Product[]> {
-      const backend = await catalogueApi.categoryProducts(categorySlug);
-      const products = adaptProducts(backend);
+    /** Products filed directly under this exact category (guide §5.1). Paginated 20 at a time, same as the other list endpoints — `count` is required or the backend 400s. */
+    async fetchCategoryProducts(
+      { commit },
+      payload: { slug: string; count?: number; page?: number }
+    ): Promise<{ products: Product[]; hasMore: boolean }> {
+      const { slug, count = 20, page = 1 } = payload;
+      const result = await catalogueApi.categoryProducts(slug, count, page);
+      const products = adaptProducts(result.results);
       for (const p of products) commit("upsertProduct", p);
-      return products;
+      return { products, hasMore: result.next !== null };
     },
 
     /** Products under this category and all of its subcategories — use for top-level category landing pages. */
-    async fetchParentCategoryProducts({ commit }, categorySlug: string): Promise<Product[]> {
-      const backend = await catalogueApi.parentCategoryProducts(categorySlug);
-      const products = adaptProducts(backend);
+    async fetchParentCategoryProducts(
+      { commit },
+      payload: { slug: string; count?: number; page?: number }
+    ): Promise<{ products: Product[]; hasMore: boolean }> {
+      const { slug, count = 20, page = 1 } = payload;
+      const result = await catalogueApi.parentCategoryProducts(slug, count, page);
+      const products = adaptProducts(result.results);
       for (const p of products) commit("upsertProduct", p);
-      return products;
+      return { products, hasMore: result.next !== null };
     },
 
     async search({ commit }, keyword: string): Promise<Product[]> {

@@ -111,14 +111,14 @@
 
 /* C. Heritage Craft — Blundstone lane, refined for dress/smart-casual (BALANTI) */
 [data-theme="heritage"] {
-  --paper: #FFFFF2;
-  --ink: #1C1A17;
-  --muted: #6A5F52;
-  --line: #D8CDBD;
-  --accent: #8B5A2B;            /* tobacco leather */
-  --accent-contrast: #F7F2EA;
+  --paper: #F7F1EA;
+  --ink: #3E1506;
+  --muted: #713215;
+  --line: #DC9E6F;
+  --accent: #AC6237;             /* tobacco leather */
+  --accent-contrast: #F7F1EA;
   --sale: #7A2E1E;
-  --font-display: "Fraunces", "Roslindale", "Bitter", serif;
+  --font-display: "EB Garamond", "Roslindale", "Bitter", serif;
   --font-body: "Inter", "Söhne", system-ui, sans-serif;
   --font-mono: "Space Mono", monospace; /* style numbers: #500, #1911 */
   /* Pulled slightly softer than the rugged-boot default (2/4/6) — BALANTI sells

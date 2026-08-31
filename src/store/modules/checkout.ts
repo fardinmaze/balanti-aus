@@ -74,6 +74,12 @@ export const checkout: Module<CheckoutState, RootState> = {
      * guest that call 401s, which we swallow: free-delivery (shipping_type
      * 0) still works without the list, guests just won't see paid options.
      */
+    /** Just the free-delivery threshold — cheap enough to load app-wide for marketing badges, without the rest of fetchConfig's bundle (which 401s the guest shipping-methods call every time). */
+    async fetchFreeDelivery({ commit, state }) {
+      if (state.freeDelivery !== null) return;
+      commit("setFreeDelivery", await checkoutApi.freeDelivery());
+    },
+
     async fetchConfig({ commit, state }) {
       if (state.configLoaded) return;
       const [vat, freeDelivery, offerStatus, paymentMethods] = await Promise.all([

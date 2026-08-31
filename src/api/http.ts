@@ -6,7 +6,7 @@
  * away so the rest of the app can just `await` a call and `catch (ApiError)`.
  */
 
-const BASE_URL = (import.meta.env.VITE_API_BASE_URL ?? "http://192.168.68.100:8080/api").replace(/\/+$/, "");
+const BASE_URL = (import.meta.env.VITE_API_BASE_URL ?? "http://192.168.68.105:8080/api").replace(/\/+$/, "");
 
 export type FieldErrors = Record<string, string[]>;
 
