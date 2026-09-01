@@ -11,6 +11,9 @@ export type CartItemPayload = {
   product_price: number;
   vat: number;
   vat_total: number;
+  /** Matrix mechanism only (guide §5.1/§5.4) — omit entirely for a product with no variation on that axis. */
+  color?: number;
+  size?: number;
 };
 
 export type PlaceOrderPayload = {

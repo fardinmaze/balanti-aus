@@ -262,6 +262,8 @@ async function placeOrder() {
           product_price: line.price,
           vat: lineVatRate(line),
           vat_total: lineVatTotal(line),
+          ...(line.colorId != null ? { color: line.colorId } : {}),
+          ...(line.sizeId != null ? { size: line.sizeId } : {}),
         })),
       },
       // Logged in: a real address-book row id (or 0 for the account's default).
@@ -557,7 +559,7 @@ const fieldClass =
 
               <ul class="mt-4 space-y-4">
                 <li v-for="line in cart.lines.value" :key="`${line.handle}-${line.size}`" class="flex gap-3">
-                  <div class="relative h-16 w-14 shrink-0 overflow-hidden rounded-md bg-surface">
+                  <div class="relative h-16 w-16 shrink-0 overflow-hidden rounded-md bg-surface">
                     <img v-if="line.image" :src="line.image" :alt="line.name" class="h-full w-full object-cover" />
                     <PlaceholderImage v-else :tone="line.tone" :label="line.name" class="h-full w-full" />
                   </div>

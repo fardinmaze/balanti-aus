@@ -46,13 +46,13 @@ const reassuranceLine = computed(() => [freeShippingLine.value, "— Australia-w
 
           <ul v-else class="space-y-4">
             <li v-for="line in cart.lines.value" :key="`${line.handle}-${line.size}`" class="flex gap-3">
-              <div class="h-20 w-16 shrink-0 overflow-hidden rounded-md">
+              <div class="h-20 w-20 shrink-0 overflow-hidden rounded-md">
                 <img v-if="line.image" :src="line.image" :alt="line.name" class="h-full w-full object-cover" />
                 <PlaceholderImage v-else :tone="line.tone" :label="line.name" class="h-full w-full" />
               </div>
               <div class="flex flex-1 flex-col gap-1">
                 <p class="text-sm font-semibold">{{ line.name }}</p>
-                <p class="eyebrow">{{ line.colorway }} · {{ line.size }}</p>
+                <p class="eyebrow">{{ line.size }}</p>
                 <div class="mt-auto flex items-center justify-between">
                   <div class="flex items-center gap-2">
                     <button

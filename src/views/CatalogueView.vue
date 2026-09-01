@@ -79,8 +79,12 @@ const baseProducts = computed(() => categoryScopedProducts.value ?? catalogue.pr
 
 const ALL_COLORS = computed(() => [...new Set(baseProducts.value.map((p) => p.colorway).filter(Boolean))].sort());
 const ALL_MATERIALS = computed(() => [...new Set(baseProducts.value.map((p) => p.material).filter(Boolean))].sort());
-const PRICE_MIN = computed(() => (baseProducts.value.length ? Math.min(...baseProducts.value.map((p) => p.price)) : 0));
-const PRICE_MAX = computed(() => (baseProducts.value.length ? Math.max(...baseProducts.value.map((p) => p.price)) : 0));
+// Fixed bounds rather than derived from baseProducts: category/catalogue products
+// load asynchronously and often arrive in more than one batch, so a range derived
+// from "whatever's loaded so far" could clip out products that haven't landed yet
+// (e.g. a 2-product subcategory briefly showing only the first product's price).
+const PRICE_MIN = 0;
+const PRICE_MAX = 5000;
 const colorSwatches = computed(() => {
   const swatches: Record<string, string> = {};
   for (const p of baseProducts.value) if (p.colorway && !swatches[p.colorway]) swatches[p.colorway] = p.tone;
@@ -90,8 +94,8 @@ const colorSwatches = computed(() => {
 const showFilters = ref(true);
 const selectedColors = ref<string[]>([]);
 const selectedMaterials = ref<string[]>([]);
-const priceMin = ref(PRICE_MIN.value);
-const priceMax = ref(PRICE_MAX.value);
+const priceMin = ref(PRICE_MIN);
+const priceMax = ref(PRICE_MAX);
 const sort = ref<SortKey>("featured");
 
 function toArray(value: unknown): string[] {
@@ -105,30 +109,21 @@ function hydrateFromQuery() {
   selectedCategorySlug.value = q.category ? String(q.category) : null;
   selectedColors.value = toArray(q.color).filter((v) => ALL_COLORS.value.includes(v));
   selectedMaterials.value = toArray(q.material).filter((v) => ALL_MATERIALS.value.includes(v));
-  priceMin.value = q.price_min ? Math.max(PRICE_MIN.value, Number(q.price_min)) : PRICE_MIN.value;
-  priceMax.value = q.price_max ? Math.min(PRICE_MAX.value, Number(q.price_max)) : PRICE_MAX.value;
+  priceMin.value = q.price_min ? Math.max(PRICE_MIN, Number(q.price_min)) : PRICE_MIN;
+  priceMax.value = q.price_max ? Math.min(PRICE_MAX, Number(q.price_max)) : PRICE_MAX;
   const sortValue = String(q.sort ?? "");
   sort.value = SORT_VALUES.includes(sortValue as SortKey) ? (sortValue as SortKey) : "featured";
 }
 
 watch(() => route.query, hydrateFromQuery, { immediate: true });
 
-// Category product set loads async, so its price bounds land after hydrateFromQuery
-// already ran against the old (or empty) bounds. Re-clamp into the fresh range so a
-// stale priceMin/priceMax doesn't linger as a bogus "custom range" — which both hides
-// valid products and leaks pointless price_min/price_max params into the URL.
-watch([PRICE_MIN, PRICE_MAX], ([min, max]) => {
-  priceMin.value = Math.min(Math.max(priceMin.value, min), max);
-  priceMax.value = Math.max(Math.min(priceMax.value, max), min);
-});
-
 function syncQuery() {
   const query: Record<string, string> = {};
   if (selectedCategorySlug.value) query.category = selectedCategorySlug.value;
   if (selectedColors.value.length) query.color = selectedColors.value.join(",");
   if (selectedMaterials.value.length) query.material = selectedMaterials.value.join(",");
-  if (priceMin.value !== PRICE_MIN.value) query.price_min = String(priceMin.value);
-  if (priceMax.value !== PRICE_MAX.value) query.price_max = String(priceMax.value);
+  if (priceMin.value !== PRICE_MIN) query.price_min = String(priceMin.value);
+  if (priceMax.value !== PRICE_MAX) query.price_max = String(priceMax.value);
   if (sort.value !== "featured") query.sort = sort.value;
   router.replace({ query });
 }
@@ -142,8 +137,8 @@ function clearAll() {
   selectedCategorySlug.value = null;
   selectedColors.value = [];
   selectedMaterials.value = [];
-  priceMin.value = PRICE_MIN.value;
-  priceMax.value = PRICE_MAX.value;
+  priceMin.value = PRICE_MIN;
+  priceMax.value = PRICE_MAX;
   syncQuery();
 }
 
@@ -204,13 +199,13 @@ const chips = computed<Chip[]>(() => {
       },
     });
   }
-  if (priceMin.value !== PRICE_MIN.value || priceMax.value !== PRICE_MAX.value) {
+  if (priceMin.value !== PRICE_MIN || priceMax.value !== PRICE_MAX) {
     list.push({
       key: "price",
       label: `$${priceMin.value}–$${priceMax.value}`,
       remove: () => {
-        priceMin.value = PRICE_MIN.value;
-        priceMax.value = PRICE_MAX.value;
+        priceMin.value = PRICE_MIN;
+        priceMax.value = PRICE_MAX;
         syncQuery();
       },
     });
@@ -298,7 +293,7 @@ const chips = computed<Chip[]>(() => {
             </label>
           </FilterGroup>
 
-          <FilterGroup heading="Color" :count="selectedColors.length">
+          <!-- <FilterGroup heading="Color" :count="selectedColors.length">
             <label v-for="c in ALL_COLORS" :key="c" class="flex items-center gap-3 text-sm">
               <input
                 v-model="selectedColors"
@@ -310,7 +305,7 @@ const chips = computed<Chip[]>(() => {
               <span class="h-3 w-3 shrink-0 rounded-pill border border-line" :style="{ backgroundColor: colorSwatches[c] }" />
               {{ c }}
             </label>
-          </FilterGroup>
+          </FilterGroup> -->
 
           <FilterGroup heading="Shop By Price">
             <PriceRangeSlider

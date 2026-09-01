@@ -35,10 +35,44 @@ export type BackendProductVariation = {
   as_for_sale?: number;
 };
 
+/**
+ * Single-row color/size mechanism (guide §5.1) — a separate, independent
+ * mechanism from the sibling-row `variations` above. `images` is absent/empty
+ * when that color has no photos.
+ */
+export type BackendProductColor = {
+  id: number;
+  name: string;
+  hex_code?: string | null;
+  images?: Array<string | BackendProductImage>;
+};
+
+export type BackendProductSize = {
+  id: number;
+  name: string;
+};
+
+/** Current stock per (color, size) combination — `color`/`size` are `null` when the product has no variation on that axis. */
+export type BackendStockVariation = {
+  color: number | null;
+  color_name?: string | null;
+  color_image?: string | null;
+  size: number | null;
+  size_name?: string | null;
+  quantity: number;
+};
+
 /** Category as embedded on a product — only carries name/slug, unlike the richer rows from /all-categories or /top-categories. */
 export type BackendProductCategoryRef = {
   name: string;
   slug: string;
+};
+
+/** Verified against a live response — general product photos (not per-color), returned as an array of these rows. */
+export type BackendProductImage = {
+  id: number;
+  image: string;
+  created_at?: string;
 };
 
 export type BackendProduct = {
@@ -60,17 +94,23 @@ export type BackendProduct = {
   /** Shared id linking variant sibling products together; null when the product has no variants. */
   product_group?: string | number | null;
   variations?: BackendProductVariation[];
+  /** Single-row color/size mechanism (guide §5.1) — absent/empty on products that don't use it. */
+  colors?: BackendProductColor[];
+  sizes?: BackendProductSize[];
+  stock_variations?: BackendStockVariation[];
   special_filter?: unknown;
-  /** [assumed] — image field name/shape not given verbatim in the guide. */
-  images?: Array<string | { image: string }>;
-  product_images?: Array<string | { image: string }>;
+  images?: Array<string | BackendProductImage>;
+  product_images?: Array<string | BackendProductImage>;
   product_image?: string[];
   description?: string;
-  short_description?: string;
+  /** Verified against a live response — the guide's assumed `short_description` name doesn't exist; this is the real field. */
+  sell_description?: string;
   material?: string;
   color?: string;
   colorway?: string;
   as_for_sale?: number;
+  /** Whole-product stock count — the same figure checkout compares against for a product with no color/size axis (guide §5.4). */
+  ps_on_hand?: number;
   bmsm?: boolean;
   hot_item?: boolean;
   is_featured?: boolean;

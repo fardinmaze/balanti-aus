@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { computed } from "vue";
-import { RouterLink } from "vue-router";
+import { RouterLink, useRouter } from "vue-router";
 import type { Product } from "@/types/product";
 import PlaceholderImage from "@/components/ui/PlaceholderImage.vue";
 import PriceTag from "@/components/ui/Price.vue";
@@ -11,10 +11,18 @@ import { useCart } from "@/lib/cart";
 const props = defineProps<{ product: Product }>();
 const wishlist = useWishlist();
 const cart = useCart();
+const router = useRouter();
 
+// Matrix-mechanism products (§5.1) need a color/size picked on the PDP — there's no
+// single unambiguous "first in stock size" to quick-add, unlike sibling-row products.
+const isMatrix = computed(() => props.product.colorOptions.length > 0 || props.product.sizeOptions.length > 0);
 const firstInStockSize = computed(() => props.product.sizes.find((size) => size.inStock)?.value);
 
 function quickAdd() {
+  if (isMatrix.value) {
+    router.push(`/products/${props.product.handle}`);
+    return;
+  }
   if (!firstInStockSize.value) return;
   cart.addItem(props.product, firstInStockSize.value);
 }
@@ -22,7 +30,7 @@ function quickAdd() {
 
 <template>
   <RouterLink :to="`/products/${product.handle}`" class="group block">
-    <div class="relative aspect-[4/5] overflow-hidden rounded-none bg-surface">
+    <div class="relative aspect-[5/5] overflow-hidden rounded-none bg-surface">
       <img
         v-if="product.image"
         :src="product.image"
@@ -64,12 +72,20 @@ function quickAdd() {
         class="absolute inset-x-3 bottom-3 min-h-[var(--tap-min)] rounded-pill bg-ink text-sm font-semibold text-paper opacity-0 shadow-[var(--shadow-card)] transition-[opacity,transform] duration-[var(--dur-mid)] translate-y-2 group-hover:translate-y-0 group-hover:opacity-100 sm:min-h-0 sm:py-2.5"
         @click.stop.prevent="quickAdd"
       >
-        Quick add
+        {{ isMatrix ? "Select options" : "Quick add" }}
       </button>
     </div>
     <div class="mt-4 space-y-1.5">
       <h3 class="font-display text-lg font-semibold sm:text-xl">{{ product.name }}</h3>
-      <p class="eyebrow">{{ product.material }} · {{ product.colorway }}</p>
+      <ul v-if="product.colorOptions.length" class="flex flex-wrap gap-1.5" aria-label="Available colors">
+        <li
+          v-for="color in product.colorOptions"
+          :key="color.id"
+          class="h-3.5 w-3.5 shrink-0 rounded-pill border border-line"
+          :style="color.hexCode ? { backgroundColor: color.hexCode } : undefined"
+          :title="color.name"
+        />
+      </ul>
       <PriceTag
         :amount="product.onSale ? product.offerPrice! : product.price"
         :compare-at-amount="product.onSale ? product.price : undefined"

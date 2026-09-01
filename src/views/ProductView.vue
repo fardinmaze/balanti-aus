@@ -19,6 +19,8 @@ const wishlist = useWishlist();
 const product = ref<Product | undefined>(undefined);
 const notFound = ref(false);
 const loading = ref(true);
+/** Set by BuyBox to the selected matrix-mechanism color's photos (§5.1) — empty when none selected. */
+const selectedColorImages = ref<string[]>([]);
 
 async function load(handle: string) {
   loading.value = true;
@@ -35,6 +37,15 @@ async function load(handle: string) {
   loading.value = false;
 }
 
+watch(product, () => {
+  selectedColorImages.value = [];
+});
+
+// Whole-product stock (Product.ps_on_hand) — the same figure checkout compares
+// against for a product with no color/size axis (guide §5.4). `null` means the
+// API didn't return it, so we don't claim a stock state we can't back up.
+const isOutOfStock = computed(() => product.value != null && product.value.stockOnHand !== null && product.value.stockOnHand < 1);
+
 watch(() => route.params.handle, (handle) => load(String(handle)), { immediate: true });
 
 const freeShippingLine = useFreeShippingLine();
@@ -44,7 +55,7 @@ const reassuranceItems = computed(() => [freeShippingLine.value, '— Australia-
 <template>
   <section v-if="product" class="!pt-8 sm:!pt-12">
     <div class="container grid gap-10 lg:grid-cols-[minmax(0,520px)_1fr] lg:gap-16">
-      <Gallery :product="product" />
+      <Gallery :product="product" :active-images="selectedColorImages" />
 
       <div>
         <div class="flex items-start justify-between gap-4">
@@ -67,17 +78,22 @@ const reassuranceItems = computed(() => [freeShippingLine.value, '— Australia-
           class="mt-3 block text-xl"
         />
 
-        <p v-if="product.description" class="mt-6 text-muted">{{ product.description }}</p>
+        <span
+          v-if="isOutOfStock"
+          class="eyebrow mt-3 inline-block rounded-pill border border-sale px-3 py-1 text-sale"
+        >
+          Stock out
+        </span>
+
+        <p v-if="product.description" class="mt-6 text-muted" v-html="product.description"></p>
 
         <div class="mt-8">
-          <BuyBox :product="product" />
+          <BuyBox :product="product" @update:image="selectedColorImages = $event" />
         </div>
 
-        <ul v-if="product.details.length" class="mt-8 space-y-2 border-t border-line pt-6">
-          <li v-for="detail in product.details" :key="detail" class="text-sm text-muted">
-            · {{ detail }}
-          </li>
-        </ul>
+        <div v-if="product.details" class="mt-8 space-y-2 border-t border-line pt-6">
+          <p v-if="product.details" class="mt-6 text-muted" v-html="product.details"></p>
+        </div>
 
         <ul class="mt-6 flex flex-wrap gap-x-4 gap-y-1">
           <li v-for="item in reassuranceItems" :key="item" class="text-xs text-muted">{{ item }}</li>
@@ -85,9 +101,9 @@ const reassuranceItems = computed(() => [freeShippingLine.value, '— Australia-
       </div>
     </div>
 
-    <div class="container mt-16 max-w-3xl">
+    <!-- <div class="container mt-16 max-w-3xl">
       <ReviewsSection :product-slug="product.handle" :average-rating="product.averageRating" />
-    </div>
+    </div> -->
   </section>
 
   <section v-else-if="notFound">

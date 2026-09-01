@@ -151,6 +151,15 @@ GET /api/site-api/search-product?keyword=oxford&count=20
 
 **Product variants (size/color) are sibling rows, not a nested array on write, but they are nested on read.** Each size/color combination is its own `Product` row sharing a `product_group` value (the parent's own `pid`). `GET /api/site-api/product/:slug` returns the requested variant plus a `variations` array assembled server-side from its siblings — that's what you use to render a size/color picker. There is no separate "variant" resource to call.
 
+**Single-product color/size stock (new, a separate mechanism from the sibling-row one above).** Some products — typically shoe-style ones — carry their color/size options and per-combination stock directly on one `Product` row instead of as sibling rows. `GET /api/site-api/product/:slug` and the product list endpoints above also return:
+- `colors`: `[{ "id": 4, "name": "Black", "hex_code": "#000000", "image": "http://host/media/..." }]` — `image` is `null` if that color has no photo.
+- `sizes`: `[{ "id": 9, "name": "42" }]`
+- `stock_variations`: `[{ "color": 4, "color_name": "Black", "color_image": "http://host/media/...", "size": 9, "size_name": "42", "quantity": 15.0 }]` — current stock per `(color, size)` combination. `color`/`size` are `null` when a product has no variation on that axis; a `{ "color": null, "size": null, "quantity": N }` entry is the product's plain default stock.
+
+Use `colors`/`sizes` to render the picker and `stock_variations` to know what's actually purchasable for a given combination (disable/hide a combination with `quantity: 0` or no matching entry at all). All three arrays are empty on a product that doesn't use this mechanism — check `variations` (above) for whether it uses the sibling-row mechanism instead; a product can use either, both, or neither.
+
+Whichever color/size the customer picks, carry its `id`s through to checkout as `cart_items[].color`/`cart_items[].size` (§5.4) — that's what checkout validates stock against and what ends up recorded on the order line.
+
 ### 5.2 Cart
 
 There's no authoritative server-side cart resource that the frontend reads from on every render. The pattern is:
@@ -204,7 +213,8 @@ Request shape:
     "subtotal": 249.00,
     "total": 249.00,
     "cart_items": [
-      { "item_id": 1, "quantity": 1, "product_price": 249.00, "vat": 10, "vat_total": 22.63 }
+      { "item_id": 1, "quantity": 1, "product_price": 249.00, "vat": 10, "vat_total": 22.63,
+        "color": 4, "size": 9 }
     ]
   },
   "address": 0,
@@ -221,6 +231,7 @@ Field notes:
 - `shipping_type: 0` is a **sentinel**, not a real id — it means "use the shipping method literally named Free Delivery." Any other value must be a real `ShippingMethod` id from `/shipping-methods`.
 - `payment_type` must be a real `PaymentMethods` id from `/payment-methods` (currently just Cash on Delivery).
 - `cart_items[].item_id` is the **Product** row id (the specific variant, if the product has variants) — not the `pid` string.
+- `cart_items[].color`/`cart_items[].size` are **optional** — only send them for a product that uses the color/size stock mechanism (§7.8/§9 of `ADMIN_API_GUIDE.md`), and only the axis/axes it actually has: numeric `ProductHasColor`/`ProductHasSize` ids scoped to that `item_id`'s product (from `GET /api/product/color/<pid>` / `.../size/<pid>` — the admin-side catalog endpoints; there's no site-api equivalent yet, read them off `colors`/`sizes` on the product detail, §5.1). Omit either (or both) for a product with no variation on that axis. These are stored on the order line and drive which stock lot gets decremented — see the stock-check note below.
 - `vat`/`vat_total` per line: the backend trusts what you send here rather than recomputing from `Product.vat` — compute it client-side from the product's `vat` percentage so what the customer sees during checkout matches what lands on the order (`rate = product_price / (1 + vat/100)`, `vat_total = (product_price - rate) * quantity`).
 - `address`: `0` means "use the customer's default `shipping_address`" (their profile JSON); any other integer is a `CustomerAddress` row id from the address book (§5.5).
 - `customer_data` is **only consulted for guest checkout** (no `Authorization` header, or an anonymous request) — omit it for logged-in checkout.
@@ -235,6 +246,54 @@ Response on success:
 Note `failed_items` — the endpoint is resilient per-line-item: if one cart line references a bad/deleted product id, that line is skipped and reported here rather than failing the whole order (unless *every* line fails, in which case the order is rolled back and you get a top-level `code: 400`). Always check `failed_items` even on a `code: 200` response.
 
 Stock is decremented (`ps_on_hand`/`ps_committed`) synchronously as part of order creation — there's no separate "reserve stock" step.
+
+**Insufficient stock is rejected before the order is created.** Both `place-order` and
+`place-order/web-front` sum `quantity` per **`(item_id, color, size)`** across the whole cart (so
+ordering the same product/variation twice in one cart is checked as one combined amount) and
+compare it against the stock actually available for that exact combination:
+
+- If the cart line sent **neither `color` nor `size`**, that's whole-product `Product.ps_on_hand`
+  — the right check for a product that doesn't use the color/size mechanism at all.
+- If it sent **either**, the check instead sums `remaining_stock` across the stock lots matching
+  that exact `(product, color, size)` combination (the same number `stock_variations`, §5.1,
+  exposes on reads) — so a sold-out color/size is rejected even while the product overall still
+  shows stock in other combinations. A `color`/`size` id that doesn't belong to that product's own
+  catalog is rejected too, before it ever reaches a stock comparison.
+
+If any line fails either check, **no `SalesOrder` row is created at all** and you get:
+
+```json
+{
+  "code": 400,
+  "message": "One or more items exceed available stock.",
+  "data": {
+    "stock_errors": [
+      {
+        "item_id": 1,
+        "product_name": "Balmoral Oxford",
+        "color": 4,
+        "size": 9,
+        "requested": 5,
+        "available": 3,
+        "error": "Only 3.0 unit(s) of \"Balmoral Oxford\" left in stock."
+      }
+    ]
+  }
+}
+```
+
+`color`/`size` on an error entry are omitted (not present as keys) for a whole-product check;
+present (possibly `null` if only one axis was sent) for a variation check. A `color`/`size`
+ownership failure instead comes back as `{ "item_id": 1, "color": 99, "error": "Selected color
+does not belong to this product." }` — no `available`/`requested` since no stock comparison
+happened. Render `stock_errors` inline on the affected cart line(s) rather than a generic
+checkout failure — it's actionable ("only 3 left, reduce quantity").
+
+The `color`/`size` you send are also **stored on the resulting order line** and determine which
+stock lot actually gets decremented (and, if the order is later cancelled via the back office,
+which lot gets the stock given back) — so always send them when the product has variations, not
+just for the stock check. Read them back via `color`/`color_name`/`size`/`size_name` on
+`myOrderDetails`' `details` array (`SalesOrderProductsSerializer`).
 
 ### 5.5 Address book
 
@@ -510,8 +569,8 @@ Every route in the project, grouped by app, generated directly from the URL conf
 | GET | `/api/product/all` | Product View All | Staff JWT + `product.view` | &mdash; |
 | GET | `/api/product/all/parent-category-products/<slug:category_slug>` | Products By Parent Category All | Staff JWT + `product.view` | &mdash; |
 | GET | `/api/product/all/category-products/<slug:category_slug>` | Products By Category All | Staff JWT + `product.view` | &mdash; |
-| POST | `/api/product/create` | Product Create | Staff JWT + `product.create` | `as_committed`, `as_for_sale`, `as_on_hand`, `attributes`, `average_rating`, `bmsm`, `brand`, `category`, +36 more |
-| POST | `/api/product/create/single/token` | Product Create Token | Staff JWT | `as_committed`, `as_for_sale`, `as_on_hand`, `attributes`, `average_rating`, `bmsm`, `brand`, `cost_price`, +34 more |
+| POST | `/api/product/create` | Product Create | Staff JWT + `product.create` | **required:** `name`, `sell_price`. All others optional — incl. `vendor`, `unit`, `brand`, `distributor`, `category`, `subcategory` |
+| POST | `/api/product/create/single/token` | Product Create Token | Staff JWT | Same body/optionality as `/api/product/create` |
 | PATCH | `/api/product/edit/<str:product_id>` | Product Edit | Staff JWT + `product.edit` | `as_committed`, `as_for_sale`, `as_on_hand`, `attributes`, `average_rating`, `bmsm`, `brand`, `cost_price`, +32 more |
 | GET | `/api/product/details/<str:product_id>` | Product Details | Staff JWT + `product.view` | &mdash; |
 | DELETE | `/api/product/delete/<str:product_id>` | Product Delete | Staff JWT + `product.edit` | &mdash; |
@@ -525,7 +584,7 @@ Every route in the project, grouped by app, generated directly from the URL conf
 | GET | `/api/product/status/<str:product_id>` | Product Status Toggle | Staff JWT + `product.edit` | &mdash; |
 | GET | `/api/product/stats` | Product Stats | Staff JWT + `product.view` | &mdash; |
 | GET | `/api/product/search/<str:keyword>` | Product Search | Staff JWT + `product.view` | &mdash; |
-| POST | `/api/product/adjust-stock/manual-entry` | Adjust Stock Manual Entry | Staff JWT + `product.edit` | `expiry_date`, `lot_total_cost`, `lot_unit_cost`, `product_id`, `quantity`, `received_on`, `reference` |
+| POST | `/api/product/adjust-stock/manual-entry` | Adjust Stock Manual Entry | Staff JWT + `product.edit` | `color`, `expiry_date`, `lot_total_cost`, `lot_unit_cost`, `product_id`, `quantity`, `received_on`, `reference`, `size` (`color`/`size` optional; at most one lot per product+color+size combination — a duplicate is rejected, use Adjust Stock to restock it instead) |
 | POST | `/api/product/adjust-stock/<str:product_id>` | Adjust Stock | Staff JWT + `product.edit` | `adjustment_note`, `lot_number`, `quantity` |
 | GET | `/api/product/stock-lot/list/<str:product_id>` | Stocklots By Pid | Staff JWT + `inventory.view` | &mdash; |
 | GET | `/api/product/stock-lot/history/<str:product_id>` | Stocklot History By Pid | Staff JWT + `inventory.view` | &mdash; |
@@ -542,6 +601,14 @@ Every route in the project, grouped by app, generated directly from the URL conf
 | GET | `/api/product/distributor` | Get Product Distributor | Staff JWT + `product.view` | &mdash; |
 | POST | `/api/product/distributor/create` | Create Product Distributor | Staff JWT + `product.create` | `name` |
 | DELETE | `/api/product/distributor/delete/<int:distributor_id>` | Product Distirbutor Delete | Staff JWT + `product.edit` | &mdash; |
+| GET | `/api/product/color/<str:product_id>` | Get Product Colors | Staff JWT + `product.view` | &mdash; (response items now include `remaining_stock`, the color's total stock summed across all sizes — see note below) |
+| POST | `/api/product/color/create/<str:product_id>` | Create Product Color | Staff JWT + `product.edit` | `hex_code`, `image`, `name` |
+| PATCH | `/api/product/color/edit/<int:color_id>` | Product Color Edit | Staff JWT + `product.edit` | Partial: any of `hex_code`, `image`, `name` |
+| DELETE | `/api/product/color/delete/<int:color_id>` | Product Color Delete | Staff JWT + `product.edit` | &mdash; |
+| GET | `/api/product/size/<str:product_id>` | Get Product Sizes | Staff JWT + `product.view` | &mdash; (response items now include `remaining_stock`, the size's total stock summed across all colors) |
+| POST | `/api/product/size/create/<str:product_id>` | Create Product Size | Staff JWT + `product.edit` | `name` |
+| PATCH | `/api/product/size/edit/<int:size_id>` | Product Size Edit | Staff JWT + `product.edit` | Partial: `name` |
+| DELETE | `/api/product/size/delete/<int:size_id>` | Product Size Delete | Staff JWT + `product.edit` | &mdash; |
 | POST | `/api/product/price-updater/<str:product_id>` | Price Updater | Staff JWT + `product.edit` | `cost_price`, `offer_price`, `on_sale`, `sell_price` |
 | GET | `/api/product/low-stock` | Low Stock Products | Staff JWT + `inventory.view` | &mdash; |
 | GET | `/api/product/expiring-soon` | Expiring Soon Products | Staff JWT + `inventory.view` | &mdash; |
@@ -558,6 +625,29 @@ Every route in the project, grouped by app, generated directly from the URL conf
 | GET | `/api/product/category/tree` | Get Category Tree | Staff JWT + `category.view` | &mdash; |
 | GET | `/api/product/parent-category-products/<slug:category_slug>` | Products By Parent Category Group | Staff JWT + `product.view` | &mdash; |
 | GET | `/api/product/category-products/<slug:category_slug>` | Products By Category Group | Staff JWT + `product.view` | &mdash; |
+
+**Color/size/stock flow — do you need Adjust Stock after adding a color or size? Yes, always.**
+Creating a color/size (`color/create`, `size/create`) only adds the option to the product's
+catalog — it never creates a stock lot. A color/size you just added shows `remaining_stock: 0`
+until you call `POST /api/product/adjust-stock/manual-entry` with its id in `color`/`size`, which
+is what actually creates the `ProductStockLot` behind it.
+
+- **Creating a product with the full color/size/stock matrix known up front:** send `colors`,
+  `sizes` and `stock` inline on `Product Create` — this creates the options *and* their stock in
+  one request, equivalent to calling Adjust Stock Manual Entry once per `stock[]` entry.
+- **Adding a color/size to an existing product:** `color/create` or `size/create` → then
+  `adjust-stock/manual-entry` with that new id to actually stock it. Skipping the second call
+  leaves the option listed with zero stock everywhere (`color`/`size` list, the stock-lot list,
+  and `stock_variations` on the product detail).
+- **Restocking a combination that already has a lot:** `adjust-stock/<product_id>` by
+  `lot_number`, not another Manual Entry call (a duplicate `(color, size)` manual entry is
+  rejected with `code: 400`).
+- **Editing a color's/size's `name`/`hex_code`/`image`** via the new `edit` endpoints above never
+  touches stock — the lot(s) already stocked against that color/size keep their quantity.
+- **Where to read "quantity left":** `Get Product Colors`/`Get Product Sizes` now return a
+  `remaining_stock` total per color/per size (summed across the other axis); for the exact
+  quantity of one specific `(color, size)` pair, use `Stocklots By Pid` or `stock_variations` on
+  the product detail (§5.1) instead.
 
 ### Back Office &mdash; Vendors
 

@@ -6,10 +6,15 @@ const STORAGE_KEY = "balanti-cart";
 
 export type CartLine = {
   handle: string;
+  /** Display + identity label — a sibling-row size value, or a "Color / Size" combo label for a matrix product. */
   size: string;
   qty: number;
   /** Backend Product row id for this exact size/variant — what checkout sends as cart_items[].item_id. */
   itemId: number;
+  /** Matrix mechanism only (§5.1/§5.4) — null for sibling-row/no-variant lines. */
+  colorId: number | null;
+  /** Matrix mechanism only (§5.1/§5.4) — null for sibling-row/no-variant lines. */
+  sizeId: number | null;
   name: string;
   price: number;
   vat: number;
@@ -17,6 +22,9 @@ export type CartLine = {
   tone: string;
   image?: string;
 };
+
+/** Passed for a matrix-mechanism product, where item_id isn't looked up from `product.sizes`. */
+export type CartVariant = { itemId: number; colorId?: number | null; sizeId?: number | null };
 
 export type CartState = {
   lines: CartLine[];
@@ -60,14 +68,29 @@ export const cart: Module<CartState, RootState> = {
     },
   },
   actions: {
-    addItem({ commit }, { product, sizeValue, qty = 1 }: { product: Product; sizeValue: string; qty?: number }) {
-      const size = product.sizes.find((s) => s.value === sizeValue);
-      if (!size) return;
+    addItem(
+      { commit },
+      { product, sizeValue, qty = 1, variant }: { product: Product; sizeValue: string; qty?: number; variant?: CartVariant }
+    ) {
+      let itemId: number;
+      let colorId: number | null = null;
+      let sizeId: number | null = null;
+      if (variant) {
+        itemId = variant.itemId;
+        colorId = variant.colorId ?? null;
+        sizeId = variant.sizeId ?? null;
+      } else {
+        const size = product.sizes.find((s) => s.value === sizeValue);
+        if (!size) return;
+        itemId = size.productId;
+      }
       commit("upsertLine", {
         handle: product.handle,
         size: sizeValue,
         qty,
-        itemId: size.productId,
+        itemId,
+        colorId,
+        sizeId,
         name: product.name,
         price: product.onSale && product.offerPrice != null ? product.offerPrice : product.price,
         vat: product.vat,

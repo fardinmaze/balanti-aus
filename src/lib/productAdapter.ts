@@ -1,14 +1,16 @@
-import type { BackendProduct, BackendProductCategoryRef, BackendProductVariation } from "@/api/types";
-import type { Product, ProductCategory, Size } from "@/types/product";
+import type { BackendProduct, BackendProductCategoryRef, BackendProductImage, BackendProductVariation } from "@/api/types";
+import type { ColorOption, Product, ProductCategory, Size, SizeOption, StockVariation } from "@/types/product";
 
 /**
  * Maps the live Balanti backend's Product shape onto the frontend's display
- * shape. The backend has no equivalent for some marketing copy (targetCustomer,
- * bullet `details`) — see FRONTEND_API_GUIDE.md §8 (product fields truncated
- * in the doc as "+36 more"). Category/subcategory are read straight off the
- * backend's Category rows rather than an invented gender/style taxonomy.
- * Everything below degrades to a sensible default rather than throwing when a
- * field is missing or named differently than assumed.
+ * shape. `description`/`details` are rendered verbatim as HTML (v-html) from
+ * `Product.description`/`Product.sell_description` — never reformatted or
+ * fabricated. The backend has no equivalent for `targetCustomer` — see
+ * FRONTEND_API_GUIDE.md §8 (product fields truncated in the doc as "+36 more").
+ * Category/subcategory are read straight off the backend's Category rows
+ * rather than an invented gender/style taxonomy. Everything below degrades to
+ * a sensible default rather than throwing when a field is missing or named
+ * differently than assumed.
  */
 
 function toCategory(value: BackendProductCategoryRef | null | undefined): ProductCategory | undefined {
@@ -23,11 +25,14 @@ function deriveBadge(product: BackendProduct): Product["badge"] {
   return undefined;
 }
 
-function firstImage(product: BackendProduct): string | undefined {
-  const candidates = product.images ?? product.product_images ?? product.product_image;
-  const first = candidates?.[0];
-  if (!first) return undefined;
-  return typeof first === "string" ? first : first.image;
+function extractImageUrls(candidates: Array<string | BackendProductImage> | undefined): string[] {
+  if (!candidates?.length) return [];
+  return candidates.map((c) => (typeof c === "string" ? c : c.image)).filter(Boolean);
+}
+
+/** All general product photos (not per-color), in API order — empty when the product has none. */
+function adaptImages(product: BackendProduct): string[] {
+  return extractImageUrls(product.images ?? product.product_images ?? product.product_image);
 }
 
 /** Deterministic, muted "leather" tone per product — stable across reloads, no photography needed. */
@@ -55,22 +60,43 @@ function adaptSizes(product: BackendProduct): Size[] {
   return [{ value: "One Size", inStock: (product.as_for_sale ?? 1) > 0, productId: product.id }];
 }
 
-function deriveDetails(product: BackendProduct): string[] {
-  if (product.description) {
-    return product.description
-      .split(/(?<=[.!])\s+/)
-      .map((s) => s.trim())
-      .filter(Boolean)
-      .slice(0, 5);
-  }
-  return [];
+/** Matrix mechanism (§5.1) — only maps what's actually in `product.colors`; empty when absent. */
+function adaptColorOptions(product: BackendProduct): ColorOption[] {
+  if (!product.colors?.length) return [];
+  return product.colors.map((c) => ({
+    id: c.id,
+    name: c.name,
+    hexCode: c.hex_code ?? null,
+    images: extractImageUrls(c.images),
+  }));
+}
+
+/** Matrix mechanism (§5.1) — only maps what's actually in `product.sizes`; empty when absent. */
+function adaptSizeOptions(product: BackendProduct): SizeOption[] {
+  if (!product.sizes?.length) return [];
+  return product.sizes.map((s) => ({ id: s.id, name: s.name }));
+}
+
+/** Matrix mechanism (§5.1) — only maps what's actually in `product.stock_variations`; empty when absent. */
+function adaptStockVariations(product: BackendProduct): StockVariation[] {
+  if (!product.stock_variations?.length) return [];
+  return product.stock_variations.map((v) => ({
+    color: v.color ?? null,
+    colorName: v.color_name ?? null,
+    colorImage: v.color_image ?? null,
+    size: v.size ?? null,
+    sizeName: v.size_name ?? null,
+    quantity: v.quantity,
+  }));
 }
 
 export function adaptProduct(product: BackendProduct): Product {
   const colorway = product.colorway ?? product.color ?? "";
   const onSale = Boolean(product.on_sale) && typeof product.offer_price === "number" && product.offer_price < product.sell_price;
+  const images = adaptImages(product);
 
   return {
+    id: product.id,
     handle: product.slug,
     name: product.name,
     material: product.material ?? "Leather",
@@ -83,11 +109,16 @@ export function adaptProduct(product: BackendProduct): Product {
     category: toCategory(product.category),
     subcategory: toCategory(product.subcategory),
     targetCustomer: "",
-    description: product.short_description ?? product.description ?? "",
-    details: deriveDetails(product),
+    description: product.description ?? "",
+    details: product.sell_description ?? "",
     sizes: adaptSizes(product),
+    colorOptions: adaptColorOptions(product),
+    sizeOptions: adaptSizeOptions(product),
+    stockVariations: adaptStockVariations(product),
     tone: toneForSeed(product.slug || product.name),
-    image: firstImage(product),
+    images,
+    image: images[0],
+    stockOnHand: typeof product.ps_on_hand === "number" ? product.ps_on_hand : null,
     averageRating: product.average_rating,
   };
 }
