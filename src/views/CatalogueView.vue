@@ -341,7 +341,7 @@ const chips = computed<Chip[]>(() => {
           </p>
           <div
             v-else
-            class="grid grid-cols-2 gap-[2px] sm:grid-cols-3 xl:grid-cols-4"
+            class="grid grid-cols-2 gap-6 sm:grid-cols-3 xl:grid-cols-4"
             :class="!showFilters && '2xl:grid-cols-5'"
           >
             <ProductCard v-for="product in sorted" :key="product.handle" :product="product" />

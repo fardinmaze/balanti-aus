@@ -6,5 +6,5 @@ const catalogue = useCatalogue();
 </script>
 
 <template>
-  <ProductScrollRail v-if="catalogue.onSale.value.length" heading="On Sale" :items="catalogue.onSale.value" view-all-href="/catalogue" />
+  <ProductScrollRail v-if="catalogue.onSale.value.length" heading="Super Sale" :items="catalogue.onSale.value" view-all-href="/catalogue" />
 </template>

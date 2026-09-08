@@ -13,12 +13,12 @@ const catalogue = useCatalogue();
 <template>
   <section v-if="catalogue.topCategories.value.length">
     <h2 class="container">Shop by Category</h2>
-    <div class="mt-6 grid grid-cols-2 sm:grid-cols-4">
+    <div class="mt-6 grid grid-cols-2 sm:grid-cols-2">
       <RouterLink
         v-for="cat in catalogue.topCategories.value"
         :key="cat.id"
         :to="`/catalogue?category=${cat.slug}`"
-        class="group relative block aspect-[4/5] overflow-hidden sm:aspect-[3/4]"
+        class="group relative block aspect-[2/1] overflow-hidden sm:aspect-[2/1]"
       >
         <img
           v-if="cat.image"

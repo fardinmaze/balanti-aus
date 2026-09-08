@@ -10,8 +10,8 @@ import ShopByType from "@/components/home/ShopByType.vue";
 <template>
   <Hero />
   <ProductRail />
-  <NewArrivals />
-  <ShopByCategory />
-  <TrendingNow />
-  <ShopByType />
+  <NewArrivals class="!pt-0" />
+  <ShopByCategory class="!pt-0" />
+  <TrendingNow class="!pt-0" />
+  <!-- <ShopByType /> -->
 </template>

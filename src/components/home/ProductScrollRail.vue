@@ -53,7 +53,7 @@ function scrollByAmount(direction: 1 | -1) {
 
       <div
         ref="trackRef"
-        class="no-scrollbar -mx-14 mt-8 flex snap-x snap-mandatory gap-[2px] overflow-x-auto scroll-smooth px-14 pb-2 scroll-px-14"
+        class="no-scrollbar -mx-14 mt-8 flex snap-x snap-mandatory gap-6 overflow-x-auto scroll-smooth px-14 pb-2 scroll-px-14"
       >
         <div v-for="product in items" :key="product.handle" class="w-[70vw] shrink-0 snap-start sm:w-[320px]">
           <ProductCard :product="product" />

@@ -389,7 +389,7 @@ const fieldClass =
                   </button>
                 </div>
 
-                <form v-if="addingAddress" class="space-y-4" :class="visibleAddresses.length && 'mt-4'" @submit.prevent="saveNewAddress">
+                <form v-if="addingAddress" class="space-y-4" :class="visibleAddresses?.length ? 'mt-4' : ''" @submit.prevent="saveNewAddress">
                   <input v-model="newAddressForm.full_name" type="text" required placeholder="Full Name*" :class="fieldClass" />
                   <input v-model="newAddressForm.line1" type="text" required placeholder="Street Address*" :class="fieldClass" />
                   <input v-model="newAddressForm.line2" type="text" placeholder="Apt / Suite" :class="fieldClass" />

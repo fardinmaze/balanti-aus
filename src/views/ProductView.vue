@@ -96,7 +96,7 @@ const reassuranceItems = computed(() => [freeShippingLine.value, '— Australia-
         </div>
 
         <ul class="mt-6 flex flex-wrap gap-x-4 gap-y-1">
-          <li v-for="item in reassuranceItems" :key="item" class="text-xs text-muted">{{ item }}</li>
+          <li v-for="(item, index) in reassuranceItems" :key="index" class="text-xs text-muted">{{ item }}</li>
         </ul>
       </div>
     </div>
