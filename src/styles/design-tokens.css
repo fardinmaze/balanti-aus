@@ -187,6 +187,12 @@ a { color: inherit; text-decoration: none; }
   padding-inline: var(--gutter);
 }
 
+/* Tailwind's `sm` breakpoint (640px) — below it the 56px desktop gutter
+   left too much dead space on phones; match Tailwind's `mx-4` (16px) instead. */
+@media (max-width: 639px) {
+  :root { --gutter: 16px; }
+}
+
 section { padding-block: var(--section-y); }
 
 /* Buttons */

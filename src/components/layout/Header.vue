@@ -83,8 +83,8 @@ onBeforeUnmount(() => window.removeEventListener("keydown", onKeydown));
     @mouseleave="scheduleCloseMegaMenu"
   >
     <div class="container flex h-16 items-center justify-between gap-4">
-      <RouterLink to="/" class="font-display text-xl font-semibold tracking-tight" @click="closeMenu">
-        {{ brand.name }}
+      <RouterLink to="/" class="inline-flex items-center" @click="closeMenu">
+        <img src="/balanti-logo.png" :alt="brand.name" class="h-11 w-auto" />
       </RouterLink>
 
       <nav class="hidden items-center gap-6 md:flex" aria-label="Primary">
