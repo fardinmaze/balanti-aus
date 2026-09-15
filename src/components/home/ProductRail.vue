@@ -1,13 +1,13 @@
 <script setup lang="ts">
 import { useCatalogue } from "@/lib/catalogue";
 import ProductScrollRail from "@/components/home/ProductScrollRail.vue";
-import Spinner from "@/components/ui/Spinner.vue";
+import ProductRailSkeleton from "@/components/home/ProductRailSkeleton.vue";
 
 const catalogue = useCatalogue();
 </script>
 
 <template>
-  <Spinner v-if="catalogue.loading.value && !catalogue.featured.value.length" label="Loading featured products…" />
+  <ProductRailSkeleton v-if="catalogue.loading.value && !catalogue.featured.value.length" heading="Featured Products" />
   <ProductScrollRail
     v-else-if="catalogue.featured.value.length"
     heading="Featured Products"
