@@ -3,6 +3,7 @@ import { useCatalogue } from "@/lib/catalogue";
 import { toneForSeed } from "@/lib/productAdapter";
 import PlaceholderImage from "@/components/ui/PlaceholderImage.vue";
 import ChevronIcon from "@/components/ui/icons/ChevronIcon.vue";
+import Spinner from "@/components/ui/Spinner.vue";
 
 // Category doorways driven by whatever top-level categories the backend
 // actually has seeded (GET /site-api/top-categories), not a fixed
@@ -11,7 +12,8 @@ const catalogue = useCatalogue();
 </script>
 
 <template>
-  <section v-if="catalogue.topCategories.value.length">
+  <Spinner v-if="catalogue.loading.value && !catalogue.topCategories.value.length" label="Loading categories…" />
+  <section v-else-if="catalogue.topCategories.value.length">
     <h2 class="container">Shop by Category</h2>
     <div class="mt-6 grid grid-cols-2 sm:grid-cols-2">
       <RouterLink

@@ -11,6 +11,7 @@ import BuyBox from "@/components/product/BuyBox.vue";
 import ReviewsSection from "@/components/product/ReviewsSection.vue";
 import PriceTag from "@/components/ui/Price.vue";
 import HeartIcon from "@/components/ui/icons/HeartIcon.vue";
+import Spinner from "@/components/ui/Spinner.vue";
 
 const route = useRoute();
 const catalogue = useCatalogue();
@@ -115,6 +116,8 @@ const reassuranceItems = computed(() => [freeShippingLine.value, '— Australia-
   </section>
 
   <section v-else-if="loading">
-    <div class="container text-center text-muted">Loading…</div>
+    <div class="container">
+      <Spinner label="Loading product…" />
+    </div>
   </section>
 </template>

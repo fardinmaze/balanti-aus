@@ -43,7 +43,7 @@ export const catalogueApi = {
   products: (count = 20) => paged<BackendProduct>("/site-api/products", count),
   featuredProducts: (count = 20) => paged<BackendProduct>("/site-api/featured-products", count),
   hotProducts: (count = 20) => paged<BackendProduct>("/site-api/hot-products", count),
-  onSaleProducts: (count = 20) => paged<BackendProduct>("/site-api/super-sale-products", count),
+  onSaleProducts: (count = 20) => paged<BackendProduct>("/site-api/on-sale-products", count),
   relatedProducts: (slug: string, count = 8) => paged<BackendProduct>(`/site-api/related-products/${slug}`, count),
 
   categoryProducts: (categorySlug: string, count = 20, page = 1) =>

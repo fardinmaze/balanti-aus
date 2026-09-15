@@ -8,6 +8,7 @@ import ProductCard from "@/components/product/ProductCard.vue";
 import FilterGroup from "@/components/catalogue/FilterGroup.vue";
 import PriceRangeSlider from "@/components/catalogue/PriceRangeSlider.vue";
 import SlidersIcon from "@/components/ui/icons/SlidersIcon.vue";
+import Spinner from "@/components/ui/Spinner.vue";
 
 type SortKey = "featured" | "newest" | "price-asc" | "price-desc";
 const SORT_VALUES: SortKey[] = ["featured", "newest", "price-asc", "price-desc"];
@@ -334,7 +335,7 @@ const chips = computed<Chip[]>(() => {
         </aside>
 
         <div>
-          <p v-if="catalogue.loading.value || categoryLoading" class="text-muted">Loading products…</p>
+          <Spinner v-if="catalogue.loading.value || categoryLoading" label="Loading products…" />
           <p v-else-if="sorted.length === 0" class="text-muted">
             No products match your filters yet.
             <button type="button" class="underline" @click="clearAll">Clear filters</button>
