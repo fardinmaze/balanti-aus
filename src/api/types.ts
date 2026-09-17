@@ -72,6 +72,8 @@ export type BackendProductCategoryRef = {
 export type BackendProductImage = {
   id: number;
   image: string;
+  /** Smaller, list/thumbnail-strip-optimized version of `image` — verified against a live response. */
+  thumbnail?: string;
   created_at?: string;
 };
 
@@ -102,6 +104,8 @@ export type BackendProduct = {
   images?: Array<string | BackendProductImage>;
   product_images?: Array<string | BackendProductImage>;
   product_image?: string[];
+  /** Smaller, list/card-optimized photos — used in place of `images` for card/grid views. */
+  thumbnails?: Array<string | BackendProductImage>;
   description?: string;
   /** Verified against a live response — the guide's assumed `short_description` name doesn't exist; this is the real field. */
   sell_description?: string;

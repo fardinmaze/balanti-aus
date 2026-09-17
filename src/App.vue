@@ -2,6 +2,7 @@
 import Header from "@/components/layout/Header.vue";
 import Footer from "@/components/layout/Footer.vue";
 import CartDrawer from "@/components/cart/CartDrawer.vue";
+import ToastStack from "@/components/ui/ToastStack.vue";
 </script>
 
 <template>
@@ -14,4 +15,5 @@ import CartDrawer from "@/components/cart/CartDrawer.vue";
   </main>
   <Footer />
   <CartDrawer />
+  <ToastStack />
 </template>

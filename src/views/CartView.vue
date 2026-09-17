@@ -21,7 +21,7 @@ const cart = useCart();
         <ul class="mt-6 divide-y divide-line border-y border-line">
           <li v-for="line in cart.lines.value" :key="`${line.handle}-${line.size}`" class="flex gap-4 py-5">
             <div class="h-28 w-24 shrink-0 overflow-hidden rounded-md">
-              <img v-if="line.image" :src="line.image" :alt="line.name" class="h-full w-full object-cover" />
+              <img v-if="line.thumbnail" :src="line.thumbnail" :alt="line.name" class="h-full w-full object-cover" />
               <PlaceholderImage v-else :tone="line.tone" :label="line.name" class="h-full w-full" />
             </div>
             <div class="flex flex-1 flex-col">

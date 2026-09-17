@@ -560,7 +560,7 @@ const fieldClass =
               <ul class="mt-4 space-y-4">
                 <li v-for="line in cart.lines.value" :key="`${line.handle}-${line.size}`" class="flex gap-3">
                   <div class="relative h-16 w-16 shrink-0 overflow-hidden rounded-md bg-surface">
-                    <img v-if="line.image" :src="line.image" :alt="line.name" class="h-full w-full object-cover" />
+                    <img v-if="line.thumbnail" :src="line.thumbnail" :alt="line.name" class="h-full w-full object-cover" />
                     <PlaceholderImage v-else :tone="line.tone" :label="line.name" class="h-full w-full" />
                   </div>
                   <div class="flex-1">

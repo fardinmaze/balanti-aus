@@ -20,7 +20,7 @@ export type CartLine = {
   vat: number;
   colorway: string;
   tone: string;
-  image?: string;
+  thumbnail?: string;
 };
 
 /** Passed for a matrix-mechanism product, where item_id isn't looked up from `product.sizes`. */
@@ -96,7 +96,7 @@ export const cart: Module<CartState, RootState> = {
         vat: product.vat,
         colorway: product.colorway,
         tone: product.tone,
-        image: product.image,
+        thumbnail: product.thumbnail,
       } satisfies CartLine);
       commit("setOpen", true);
     },

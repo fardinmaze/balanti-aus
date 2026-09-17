@@ -11,7 +11,9 @@ export type ProductCategory = { name: string; slug: string };
  * both, or neither; these arrays are empty when a product doesn't use this
  * mechanism at all (never fabricated).
  */
-export type ColorOption = { id: number; name: string; hexCode: string | null; images: string[] };
+/** A color's photo — `thumbnail` is the smaller strip-optimized version, falling back to `image` when the API didn't return one. */
+export type ColorPhoto = { image: string; thumbnail: string };
+export type ColorOption = { id: number; name: string; hexCode: string | null; photos: ColorPhoto[] };
 export type SizeOption = { id: number; name: string };
 export type StockVariation = {
   color: number | null;
@@ -62,6 +64,10 @@ export type Product = {
   images: string[];
   /** First entry of `images`, for callers that only need one (e.g. list cards). */
   image?: string;
+  /** Smaller, list/card-optimized photos, in API order — empty when the product has none. */
+  thumbnails: string[];
+  /** First entry of `thumbnails` (falls back to `image` when the product has no thumbnails), for card/grid views. */
+  thumbnail?: string;
   averageRating?: number;
   /** Whole-product stock (`Product.ps_on_hand`) — `null` when the API didn't return it, never fabricated. */
   stockOnHand: number | null;

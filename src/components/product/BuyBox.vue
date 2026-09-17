@@ -1,12 +1,12 @@
 <script setup lang="ts">
 import { ref, computed, watch } from "vue";
 import { useRouter } from "vue-router";
-import type { Product } from "@/types/product";
+import type { ColorPhoto, Product } from "@/types/product";
 import { useCart } from "@/lib/cart";
 import BaseButton from "@/components/ui/BaseButton.vue";
 
 const props = defineProps<{ product: Product }>();
-const emit = defineEmits<{ (e: "update:image", images: string[]): void }>();
+const emit = defineEmits<{ (e: "update:photos", photos: ColorPhoto[]): void }>();
 
 const cart = useCart();
 const router = useRouter();
@@ -27,15 +27,27 @@ const selectedSize = ref<string | null>(null);
 
 const showSelectionError = ref(false);
 
+/** First color in API order — selected by default so the gallery has a photo set to show before the shopper picks anything. */
+function applyDefaultColor() {
+  const first = props.product.colorOptions[0];
+  if (!first) {
+    selectedColorId.value = null;
+    emit("update:photos", []);
+    return;
+  }
+  selectedColorId.value = first.id;
+  emit("update:photos", first.photos);
+}
+
 watch(
   () => props.product.handle,
   () => {
-    selectedColorId.value = null;
     selectedSizeId.value = null;
     selectedSize.value = null;
     showSelectionError.value = false;
-    emit("update:image", []);
-  }
+    applyDefaultColor();
+  },
+  { immediate: true }
 );
 
 /** `null` = no stock data to check against (don't block on it); otherwise the matched quantity, or 0 if no entry matches. */
@@ -63,7 +75,7 @@ function selectColor(colorId: number) {
   if (!colorInStock(colorId)) return;
   selectedColorId.value = colorId;
   showSelectionError.value = false;
-  emit("update:image", props.product.colorOptions.find((c) => c.id === colorId)?.images ?? []);
+  emit("update:photos", props.product.colorOptions.find((c) => c.id === colorId)?.photos ?? []);
   if (requireSize.value && selectedSizeId.value != null) {
     const qty = matrixQuantity(colorId, selectedSizeId.value);
     if (qty !== null && qty <= 0) selectedSizeId.value = null;

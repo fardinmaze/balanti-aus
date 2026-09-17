@@ -15,6 +15,10 @@ export type CatalogueState = {
   hot: Product[];
   onSale: Product[];
   byHandle: Record<string, Product>;
+  /** Handles whose `byHandle` entry came from the full detail endpoint (guide §5.4), not just a list rail — the
+   *  list serializer omits per-color photos and the general `images` array, so a list-sourced entry isn't enough
+   *  to render the product page's gallery. */
+  detailLoadedHandles: Record<string, true>;
   loaded: boolean;
   loading: boolean;
   error: string | null;
@@ -29,6 +33,7 @@ function initialState(): CatalogueState {
     hot: [],
     onSale: [],
     byHandle: {},
+    detailLoadedHandles: {},
     loaded: false,
     loading: false,
     error: null,
@@ -63,6 +68,9 @@ export const catalogue: Module<CatalogueState, RootState> = {
     },
     upsertProduct(state, product: Product) {
       state.byHandle[product.handle] = product;
+    },
+    markDetailLoaded(state, handle: string) {
+      state.detailLoadedHandles[handle] = true;
     },
     setLoading(state, loading: boolean) {
       state.loading = loading;
@@ -101,13 +109,16 @@ export const catalogue: Module<CatalogueState, RootState> = {
       }
     },
 
+    /** Always hits the detail endpoint unless this exact handle already came from it —
+     *  a list-rail copy in `byHandle` (from fetchInitial/search/category rails) isn't
+     *  enough: it's missing per-color photos and the general `images` array. */
     async fetchProduct({ commit, state }, slug: string): Promise<Product | undefined> {
-      const cached = state.byHandle[slug];
-      if (cached) return cached;
+      if (state.detailLoadedHandles[slug]) return state.byHandle[slug];
       const backend = await catalogueApi.product(slug);
       if (!backend) return undefined;
       const product = adaptProduct(backend);
       commit("upsertProduct", product);
+      commit("markDetailLoaded", slug);
       return product;
     },
 

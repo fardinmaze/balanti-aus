@@ -1,5 +1,5 @@
 import type { BackendProduct, BackendProductCategoryRef, BackendProductImage, BackendProductVariation } from "@/api/types";
-import type { ColorOption, Product, ProductCategory, Size, SizeOption, StockVariation } from "@/types/product";
+import type { ColorOption, ColorPhoto, Product, ProductCategory, Size, SizeOption, StockVariation } from "@/types/product";
 
 /**
  * Maps the live Balanti backend's Product shape onto the frontend's display
@@ -30,9 +30,22 @@ function extractImageUrls(candidates: Array<string | BackendProductImage> | unde
   return candidates.map((c) => (typeof c === "string" ? c : c.image)).filter(Boolean);
 }
 
+/** Per-photo image + thumbnail pair — falls back to the full image when the API didn't return a thumbnail. */
+function extractColorPhotos(candidates: Array<string | BackendProductImage> | undefined): ColorPhoto[] {
+  if (!candidates?.length) return [];
+  return candidates
+    .map((c) => (typeof c === "string" ? { image: c, thumbnail: c } : { image: c.image, thumbnail: c.thumbnail ?? c.image }))
+    .filter((p) => Boolean(p.image));
+}
+
 /** All general product photos (not per-color), in API order — empty when the product has none. */
 function adaptImages(product: BackendProduct): string[] {
   return extractImageUrls(product.images ?? product.product_images ?? product.product_image);
+}
+
+/** Smaller, list/card-optimized photos, in API order — empty when the product has none. */
+function adaptThumbnails(product: BackendProduct): string[] {
+  return extractImageUrls(product.thumbnails);
 }
 
 /** Deterministic, muted "leather" tone per product — stable across reloads, no photography needed. */
@@ -67,7 +80,7 @@ function adaptColorOptions(product: BackendProduct): ColorOption[] {
     id: c.id,
     name: c.name,
     hexCode: c.hex_code ?? null,
-    images: extractImageUrls(c.images),
+    photos: extractColorPhotos(c.images),
   }));
 }
 
@@ -94,6 +107,7 @@ export function adaptProduct(product: BackendProduct): Product {
   const colorway = product.colorway ?? product.color ?? "";
   const onSale = Boolean(product.on_sale) && typeof product.offer_price === "number" && product.offer_price < product.sell_price;
   const images = adaptImages(product);
+  const thumbnails = adaptThumbnails(product);
 
   return {
     id: product.id,
@@ -118,6 +132,8 @@ export function adaptProduct(product: BackendProduct): Product {
     tone: toneForSeed(product.slug || product.name),
     images,
     image: images[0],
+    thumbnails,
+    thumbnail: thumbnails[0] ?? images[0],
     stockOnHand: typeof product.ps_on_hand === "number" ? product.ps_on_hand : null,
     averageRating: product.average_rating,
   };

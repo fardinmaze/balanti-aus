@@ -5,7 +5,7 @@ import { useCatalogue } from "@/lib/catalogue";
 import { reassurance } from "@/content/copy";
 import { useFreeShippingLine } from "@/lib/freeDelivery";
 import { useWishlist } from "@/lib/wishlist";
-import type { Product } from "@/types/product";
+import type { ColorPhoto, Product } from "@/types/product";
 import Gallery from "@/components/product/Gallery.vue";
 import BuyBox from "@/components/product/BuyBox.vue";
 import ReviewsSection from "@/components/product/ReviewsSection.vue";
@@ -21,25 +21,31 @@ const product = ref<Product | undefined>(undefined);
 const notFound = ref(false);
 const loading = ref(true);
 /** Set by BuyBox to the selected matrix-mechanism color's photos (§5.1) — empty when none selected. */
-const selectedColorImages = ref<string[]>([]);
+const selectedColorPhotos = ref<ColorPhoto[]>([]);
 
 async function load(handle: string) {
   loading.value = true;
   notFound.value = false;
-  const cached = catalogue.getByHandle(handle);
-  if (cached) {
-    product.value = cached;
+  try {
+    // catalogue/fetchProduct decides for itself whether the cached copy is
+    // detail-complete (see its own guard) — a list-rail copy (e.g. from the
+    // homepage's featured/on-sale rails) is missing gallery photos, so it
+    // isn't good enough here even though a `byHandle` entry already exists.
+    const fetched = await catalogue.fetchProduct(handle);
+    product.value = fetched;
+    notFound.value = !fetched;
+  } catch {
+    // A rejected fetchProduct (network hiccup, backend error, etc.) used to leave
+    // `loading` stuck true forever — the skeleton never resolves into either the
+    // product or the "not found" state without a manual page refresh retrying it.
+    notFound.value = true;
+  } finally {
     loading.value = false;
-    return;
   }
-  const fetched = await catalogue.fetchProduct(handle);
-  product.value = fetched;
-  notFound.value = !fetched;
-  loading.value = false;
 }
 
 watch(product, () => {
-  selectedColorImages.value = [];
+  selectedColorPhotos.value = [];
 });
 
 // Whole-product stock (Product.ps_on_hand) — the same figure checkout compares
@@ -55,8 +61,8 @@ const reassuranceItems = computed(() => [freeShippingLine.value, '— Australia-
 
 <template>
   <section v-if="product" class="!pt-8 sm:!pt-12">
-    <div class="container grid gap-10 lg:grid-cols-[minmax(0,520px)_1fr] lg:gap-16">
-      <Gallery :product="product" :active-images="selectedColorImages" />
+    <div class="container grid gap-10 lg:grid-cols-[minmax(0,640px)_1fr] lg:gap-16">
+      <Gallery :product="product" :active-photos="selectedColorPhotos" />
 
       <div>
         <div class="flex items-start justify-between gap-4">
@@ -89,7 +95,7 @@ const reassuranceItems = computed(() => [freeShippingLine.value, '— Australia-
         <p v-if="product.description" class="mt-6 text-muted" v-html="product.description"></p>
 
         <div class="mt-8">
-          <BuyBox :product="product" @update:image="selectedColorImages = $event" />
+          <BuyBox :product="product" @update:photos="selectedColorPhotos = $event" />
         </div>
 
         <div v-if="product.details" class="mt-8 space-y-2 border-t border-line pt-6">

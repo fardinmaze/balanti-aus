@@ -32,8 +32,8 @@ function quickAdd() {
   <RouterLink :to="`/products/${product.handle}`" class="group block">
     <div class="relative aspect-[5/5] overflow-hidden rounded-none bg-surface">
       <img
-        v-if="product.image"
-        :src="product.image"
+        v-if="product.thumbnail"
+        :src="product.thumbnail"
         :alt="`${product.name} — ${product.material}, ${product.colorway}`"
         class="absolute inset-0 h-full w-full object-cover transition-transform duration-[var(--dur-mid)] ease-[var(--ease)] group-hover:scale-105"
       />
