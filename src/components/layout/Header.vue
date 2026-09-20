@@ -106,7 +106,7 @@ onBeforeUnmount(() => window.removeEventListener("keydown", onKeydown));
     <div class="container flex h-[70px] xl:h-[76px] items-center justify-between gap-4" :class="navTextClass">
       <RouterLink to="/" class="inline-flex min-w-0 items-center" @click="closeMenu">
         <img
-          src="/balanti-logo.png"
+          src="/balanti-logo-11.png"
           :alt="brand.name"
           class="w-28 transition-[filter] duration-200 md:w-32 lg:w-36"
           :class="logoFilterClass"

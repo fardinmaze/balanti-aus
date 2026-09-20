@@ -38,7 +38,7 @@ const activeSocialLinks = computed(() => {
     <div class="container grid gap-10 py-12 sm:grid-cols-3">
       <div>
         <RouterLink to="/" class="inline-flex items-center">
-          <img src="/balanti-logo.png" :alt="brand.name" class="h-14 lg:h-16 w-auto" />
+          <img src="/balanti-logo-11.png" :alt="brand.name" class="h-14 lg:h-16 w-auto" />
         </RouterLink>
         <p class="mt-4 max-w-xs text-sm text-muted">{{ brand.tagline }}</p>
 
