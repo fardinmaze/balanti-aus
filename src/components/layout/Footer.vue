@@ -37,7 +37,9 @@ const activeSocialLinks = computed(() => {
   <footer class="border-t border-line bg-surface">
     <div class="container grid gap-10 py-12 sm:grid-cols-3">
       <div>
-        <img src="/balanti-logo.png" :alt="brand.name" class="h-14 w-auto" />
+        <RouterLink to="/" class="inline-flex items-center">
+          <img src="/balanti-logo.png" :alt="brand.name" class="h-14 lg:h-16 w-auto" />
+        </RouterLink>
         <p class="mt-4 max-w-xs text-sm text-muted">{{ brand.tagline }}</p>
 
         <div v-if="activeSocialLinks.length" class="mt-4 flex items-center gap-3">

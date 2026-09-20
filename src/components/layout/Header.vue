@@ -1,6 +1,6 @@
 <script setup lang="ts">
-import { computed, ref, onBeforeUnmount } from "vue";
-import { RouterLink } from "vue-router";
+import { computed, ref, onMounted, onBeforeUnmount } from "vue";
+import { RouterLink, useRoute } from "vue-router";
 import type { MegaMenuColumn } from "@/content/nav";
 import { brand } from "@/content/copy";
 import { useCart } from "@/lib/cart";
@@ -17,6 +17,26 @@ const cart = useCart();
 const wishlist = useWishlist();
 const auth = useAuth();
 const catalogue = useCatalogue();
+const route = useRoute();
+
+// The header floats transparently over the homepage hero video (Hero.vue
+// pulls up under it) only while at the very top of the page — as soon as
+// the user starts scrolling, it picks up its solid background/blur again
+// (and switches nav text back to dark) like a normal header everywhere else.
+const SCROLL_THRESHOLD = 8;
+const scrollY = ref(typeof window !== "undefined" ? window.scrollY : 0);
+function onScroll() {
+  scrollY.value = window.scrollY;
+}
+onMounted(() => window.addEventListener("scroll", onScroll, { passive: true }));
+onBeforeUnmount(() => window.removeEventListener("scroll", onScroll));
+
+const isOverHero = computed(() => route.path === "/" && scrollY.value < SCROLL_THRESHOLD);
+const navTextClass = computed(() => (isOverHero.value ? "text-white" : "text-ink"));
+const headerBgClass = computed(() => (isOverHero.value ? "" : "bg-paper/95 backdrop-blur-sm"));
+// The logo PNG has no white variant — brightness-0 + invert turns its
+// (transparent-background) artwork into solid white while over the hero.
+const logoFilterClass = computed(() => (isOverHero.value ? "brightness-0 invert" : ""));
 
 // Primary nav mirrors whatever top-level categories the backend actually
 // has seeded (GET /site-api/top-categories) instead of a fixed Men/Women/
@@ -79,12 +99,18 @@ onBeforeUnmount(() => window.removeEventListener("keydown", onKeydown));
 
 <template>
   <header
-    class="top-navbar sticky top-0 z-40 border-b border-line bg-paper/95 backdrop-blur-sm"
+    class="top-navbar fixed inset-x-0 top-0 z-40 border-b border-line transition-colors duration-200"
+    :class="headerBgClass"
     @mouseleave="scheduleCloseMegaMenu"
   >
-    <div class="container flex h-16 items-center justify-between gap-4">
-      <RouterLink to="/" class="inline-flex items-center" @click="closeMenu">
-        <img src="/balanti-logo.png" :alt="brand.name" class="h-11 w-auto" />
+    <div class="container flex h-[70px] xl:h-[76px] items-center justify-between gap-4" :class="navTextClass">
+      <RouterLink to="/" class="inline-flex min-w-0 items-center" @click="closeMenu">
+        <img
+          src="/balanti-logo.png"
+          :alt="brand.name"
+          class="w-28 transition-[filter] duration-200 md:w-32 lg:w-36"
+          :class="logoFilterClass"
+        />
       </RouterLink>
 
       <nav class="hidden items-center gap-6 md:flex" aria-label="Primary">
@@ -96,19 +122,22 @@ onBeforeUnmount(() => window.removeEventListener("keydown", onKeydown));
         >
           <RouterLink
             :to="item.href"
-            class="inline-flex items-center py-2 text-sm font-medium text-ink transition-opacity hover:opacity-70"
+            class="inline-flex items-center py-2 text-sm font-medium transition-opacity hover:opacity-70"
             :aria-expanded="openItem === item.label"
             @click="closeMegaMenuNow"
           >
             {{ item.label }}
           </RouterLink>
         </div>
+        <RouterLink to="/about" class="inline-flex items-center">
+          <p class="inline-flex items-center py-2 text-sm font-medium transition-opacity hover:opacity-70">About Us</p>
+        </RouterLink>
       </nav>
 
-      <div class="flex items-center gap-1">
+      <div class="flex shrink-0 items-center gap-1">
         <RouterLink
           :to="auth.isAuthenticated.value ? '/account' : '/account/login'"
-          class="inline-flex min-h-[var(--tap-min)] min-w-[var(--tap-min)] items-center justify-center rounded-md"
+          class="hidden min-h-[var(--tap-min)] min-w-[var(--tap-min)] items-center justify-center rounded-md md:inline-flex"
           aria-label="Account"
         >
           <UserIcon class="h-5 w-5" />
@@ -116,7 +145,7 @@ onBeforeUnmount(() => window.removeEventListener("keydown", onKeydown));
 
         <RouterLink
           to="/wishlist"
-          class="relative inline-flex min-h-[var(--tap-min)] min-w-[var(--tap-min)] items-center justify-center rounded-md"
+          class="relative hidden min-h-[var(--tap-min)] min-w-[var(--tap-min)] items-center justify-center rounded-md md:inline-flex"
           aria-label="Wishlist"
         >
           <HeartIcon class="h-5 w-5" :filled="wishlist.count.value > 0" />
@@ -175,6 +204,7 @@ onBeforeUnmount(() => window.removeEventListener("keydown", onKeydown));
       v-if="menuOpen"
       id="mobile-nav"
       class="container flex flex-col gap-1 border-t border-line py-3 md:hidden"
+      :class="navTextClass"
       aria-label="Primary mobile"
     >
       <RouterLink
@@ -186,6 +216,25 @@ onBeforeUnmount(() => window.removeEventListener("keydown", onKeydown));
       >
         {{ item.label }}
       </RouterLink>
+      <RouterLink to="/about" class="rounded-md px-2 py-3 text-base font-medium" @click="closeMenu">
+        About Us
+      </RouterLink>
+
+      <div class="mt-2 flex flex-col gap-1 border-t border-line pt-2">
+        <RouterLink
+          :to="auth.isAuthenticated.value ? '/account' : '/account/login'"
+          class="flex items-center gap-3 rounded-md px-2 py-3 text-base font-medium"
+          @click="closeMenu"
+        >
+          <UserIcon class="h-5 w-5" />
+          Account
+        </RouterLink>
+        <RouterLink to="/wishlist" class="flex items-center gap-3 rounded-md px-2 py-3 text-base font-medium" @click="closeMenu">
+          <HeartIcon class="h-5 w-5" :filled="wishlist.count.value > 0" />
+          Wishlist
+          <span v-if="wishlist.count.value > 0" class="text-sm text-muted">({{ wishlist.count.value }})</span>
+        </RouterLink>
+      </div>
     </nav>
   </header>
 </template>

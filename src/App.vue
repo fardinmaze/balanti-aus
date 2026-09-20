@@ -10,7 +10,7 @@ import ToastStack from "@/components/ui/ToastStack.vue";
     Skip to content
   </a>
   <Header />
-  <main id="main" class="flex-1">
+  <main id="main" class="flex-1 pt-[70px] lg:pt-[76px]">
     <RouterView />
   </main>
   <Footer />

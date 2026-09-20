@@ -54,6 +54,15 @@ watch(
   { immediate: true }
 );
 
+const activeIndex = computed(() => thumbnails.value.findIndex((t) => t.key === activeKey.value));
+
+function goToOffset(offset: number) {
+  const count = thumbnails.value.length;
+  if (count < 2) return;
+  const nextIndex = (activeIndex.value + offset + count) % count;
+  activeKey.value = thumbnails.value[nextIndex].key;
+}
+
 const activeThumb = computed(() => thumbnails.value.find((t) => t.key === activeKey.value) ?? thumbnails.value[0]);
 // The hero slot shows the full-resolution photo — thumbnails are generated small
 // (for the strip below) and look soft/blurry stretched up to hero size. The zoom
@@ -145,9 +154,16 @@ function onPointerUp() {
   isDragging.value = false;
 }
 
+function goToOffsetInZoom(offset: number) {
+  goToOffset(offset);
+  resetZoom();
+}
+
 function onZoomKeydown(event: KeyboardEvent) {
   if (event.key === "+" || event.key === "=") zoomIn();
   else if (event.key === "-") zoomOut();
+  else if (event.key === "ArrowLeft") goToOffsetInZoom(-1);
+  else if (event.key === "ArrowRight") goToOffsetInZoom(1);
 }
 
 // Bound on `window` rather than the dialog element — focus may still be on the hero
@@ -167,29 +183,48 @@ onUnmounted(() => {
 <template>
   <div class="flex flex-col gap-3">
     <div class="flex items-start gap-3">
-      <button
-        v-if="heroImage"
-        type="button"
-        class="group relative w-full max-w-[520px] flex-1 min-w-0 cursor-zoom-in overflow-hidden rounded-lg"
-        aria-label="Open full-size image viewer"
-        @click="openZoom"
-      >
-        <img
-          :src="heroImage"
-          :alt="heroAlt"
-          loading="eager"
-          decoding="async"
-          fetchpriority="high"
-          class="h-full w-full object-cover transition-transform duration-[var(--dur-mid)] ease-[var(--ease)] group-hover:scale-[1.03]"
-        />
-      </button>
-      <PlaceholderImage
-        v-else
-        :tone="product.tone"
-        :label="product.name"
-        :angle="heroAngle"
-        class="w-full max-w-[520px] flex-1 min-w-0 rounded-lg"
-      />
+      <div class="relative w-full max-w-[520px] flex-1 min-w-0">
+        <button
+          v-if="heroImage"
+          type="button"
+          class="group relative h-full w-full overflow-hidden rounded-lg cursor-zoom-in"
+          aria-label="Open full-size image viewer"
+          @click="openZoom"
+        >
+          <img
+            :src="heroImage"
+            :alt="heroAlt"
+            loading="eager"
+            decoding="async"
+            fetchpriority="high"
+            class="h-full w-full object-cover transition-transform duration-[var(--dur-mid)] ease-[var(--ease)] group-hover:scale-[1.03]"
+          />
+        </button>
+        <PlaceholderImage v-else :tone="product.tone" :label="product.name" :angle="heroAngle" class="h-full w-full rounded-lg" />
+
+        <template v-if="thumbnails.length > 1">
+          <button
+            type="button"
+            class="absolute left-2 top-1/2 z-10 flex h-9 w-9 -translate-y-1/2 items-center justify-center rounded-pill bg-paper text-ink shadow-[var(--shadow-card)]"
+            aria-label="Previous image"
+            @click="goToOffset(-1)"
+          >
+            <svg viewBox="0 0 24 24" class="h-5 w-5" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M15 6l-6 6 6 6" />
+            </svg>
+          </button>
+          <button
+            type="button"
+            class="absolute right-2 top-1/2 z-10 flex h-9 w-9 -translate-y-1/2 items-center justify-center rounded-pill bg-paper text-ink shadow-[var(--shadow-card)]"
+            aria-label="Next image"
+            @click="goToOffset(1)"
+          >
+            <svg viewBox="0 0 24 24" class="h-5 w-5" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M9 6l6 6-6 6" />
+            </svg>
+          </button>
+        </template>
+      </div>
 
       <div class="flex max-h-[520px] shrink-0 flex-col gap-2 overflow-y-auto">
         <button
@@ -234,6 +269,29 @@ onUnmounted(() => {
               <path stroke-linecap="round" d="M6 6l12 12M18 6L6 18" />
             </svg>
           </button>
+
+          <template v-if="thumbnails.length > 1">
+            <button
+              type="button"
+              class="absolute left-4 top-1/2 z-10 flex h-11 w-11 -translate-y-1/2 items-center justify-center rounded-pill bg-paper text-ink shadow-[var(--shadow-card)]"
+              aria-label="Previous image"
+              @click="goToOffsetInZoom(-1)"
+            >
+              <svg viewBox="0 0 24 24" class="h-5 w-5" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M15 6l-6 6 6 6" />
+              </svg>
+            </button>
+            <button
+              type="button"
+              class="absolute right-4 top-1/2 z-10 flex h-11 w-11 -translate-y-1/2 items-center justify-center rounded-pill bg-paper text-ink shadow-[var(--shadow-card)]"
+              aria-label="Next image"
+              @click="goToOffsetInZoom(1)"
+            >
+              <svg viewBox="0 0 24 24" class="h-5 w-5" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M9 6l6 6-6 6" />
+              </svg>
+            </button>
+          </template>
 
           <div
             class="relative flex h-full w-full max-w-4xl select-none items-center justify-center overflow-hidden p-6 sm:p-12"

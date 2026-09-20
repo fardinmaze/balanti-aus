@@ -118,8 +118,10 @@
   --accent: #AC6237;             /* tobacco leather */
   --accent-contrast: #F7F1EA;
   --sale: #7A2E1E;
-  --font-display: "EB Garamond", "Roslindale", "Bitter", serif;
-  --font-body: "Inter", "Söhne", system-ui, sans-serif;
+  /* "Avenir Next" is a commercial font (Monotype) with no free web-hosted
+     version — Poppins is used site-wide as a geometric-sans stand-in. */
+  --font-display: "Poppins", "Avenir Next", system-ui, sans-serif;
+  --font-body: "Poppins", "Avenir Next", system-ui, sans-serif;
   --font-mono: "Space Mono", monospace; /* style numbers: #500, #1911 */
   /* Pulled slightly softer than the rugged-boot default (2/4/6) — BALANTI sells
      Oxfords/loafers for the office, not workwear, so a touch more polish reads right. */
@@ -146,7 +148,15 @@
 
 *, *::before, *::after { box-sizing: border-box; }
 
-html { -webkit-text-size-adjust: 100%; }
+/* Reserves the vertical scrollbar's width up front so it never appears/
+   disappears as page height crosses the viewport threshold (e.g. once the
+   full-bleed hero video finishes rendering at h-screen) — without this,
+   that shift steals ~15-17px of horizontal space right when the header's
+   mobile layout is already tightest, clipping the rightmost icon. */
+html {
+  -webkit-text-size-adjust: 100%;
+  scrollbar-gutter: stable;
+}
 
 body {
   margin: 0;

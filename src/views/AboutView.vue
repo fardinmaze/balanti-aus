@@ -1,102 +1,33 @@
 <script setup lang="ts">
-import { computed, onMounted, ref } from "vue";
-import { cmsApi } from "@/api/cms";
-import type { AboutUs } from "@/api/types";
-import { story } from "@/content/copy";
-import PlaceholderImage from "@/components/ui/PlaceholderImage.vue";
-
-const heroTone = "#3d2b1f";
-
-const aboutUs = ref<AboutUs | null>(null);
-const loading = ref(true);
-
-onMounted(async () => {
-  try {
-    aboutUs.value = (await cmsApi.aboutUs()) ?? null;
-  } finally {
-    loading.value = false;
-  }
-});
-
-function splitParagraphs(text: string | undefined): string[] {
-  if (!text) return [];
-  return text
-    .split(/\n\s*\n/)
-    .map((p) => p.trim())
-    .filter(Boolean);
-}
-
-// Backend sentinel for "not set yet" on the `values` field — filter it out
-// rather than showing a literal "No VALUE" to customers.
-const UNSET_VALUE = /^no\s*value$/i;
-
-// Falls back to the static brand copy if the CMS has nothing yet, or the
-// request fails — the page should never render empty.
-const storyParagraphs = computed(() => {
-  const fromCms = splitParagraphs(aboutUs.value?.about);
-  return fromCms.length ? fromCms : story.paragraphs;
-});
-
-const mission = computed(() => {
-  const raw = aboutUs.value?.mission;
-  if (!raw) return null;
-  const { title, description } = typeof raw === "string" ? { title: "", description: raw } : raw;
-  const trimmedTitle = title?.trim() ?? "";
-  const paragraphs = splitParagraphs(description);
-  return trimmedTitle || paragraphs.length ? { title: trimmedTitle, paragraphs } : null;
-});
-
-const values = computed(() => {
-  const raw = aboutUs.value?.values;
-  if (!raw) return [];
-  const list = Array.isArray(raw) ? raw : [raw];
-  return list.map((v) => v.trim()).filter((v) => v && !UNSET_VALUE.test(v));
-});
+import { brandValues, heritage } from "@/content/copy";
 </script>
 
 <template>
-  <section class="!pt-8 sm:!pt-12">
-    <div class="container max-w-3xl text-center">
-      <p class="eyebrow mb-4">{{ story.eyebrow }}</p>
-      <h1 class="font-display text-3xl font-semibold sm:text-4xl">{{ story.heading }}</h1>
+  <section class="!pt-8 !pb-8 sm:!pt-12 sm:!pb-10">
+    <div class="container text-center">
+      <p class="font-display text-2xl font-semibold sm:text-3xl">BALANTI — Crafted for Those Who Value More</p>
+      <p class="text-muted mt-6">Balanti is a premier Australian footwear brand that brings together the elegance of Italian-inspired design with the strength and character of local craftsmanship. Established in Sydney in 2000, Balanti has built its identity around a simple philosophy: quality should be seen, felt, and experienced in every step.</p>
+      <p class="text-muted mt-3">From its beginnings in premium men’s leather footwear, Balanti developed a reputation for refined design, exceptional comfort, and dependable durability. Through its specialised manufacturing and distribution network, the brand steadily expanded its presence across the Australian market, earning the trust of customers and establishing strong relationships throughout major supply chains.</p>
+      <p class="text-muted mt-3">Today, Balanti represents more than footwear—it represents heritage, craftsmanship, confidence, and timeless style. Its market-proven collection of full-leather footwear extends across both men’s and women’s ranges, created for people who appreciate sophisticated design without sacrificing everyday comfort and practicality.</p>
     </div>
   </section>
 
-  <!-- <section class="!pt-0">
-    <div class="container max-w-4xl">
-      <PlaceholderImage :tone="heroTone" :label="story.heading" angle="worn" class="aspect-[16/9] w-full rounded-lg" />
-    </div>
-  </section> -->
-
-  <section class="!pt-1">
-    <div class="container max-w-2xl">
-      <p v-if="loading" class="text-center text-muted">Loading our story…</p>
-      <div v-else class="space-y-5 text-muted">
-        <p v-for="(paragraph, i) in storyParagraphs" :key="i">{{ paragraph }}</p>
-      </div>
-    </div>
-  </section>
-
-  <section v-if="mission" class="!pt-10">
-    <div class="container max-w-2xl">
-      <div class="rounded-lg border border-line bg-surface p-8 sm:p-10">
-        <p class="eyebrow mb-3">Our Mission</p>
-        <h2 v-if="mission.title" class="mb-4 text-2xl">{{ mission.title }}</h2>
-        <div class="space-y-3 text-muted">
-          <p v-for="(paragraph, i) in mission.paragraphs" :key="i">{{ paragraph }}</p>
-        </div>
-      </div>
-    </div>
-  </section>
-
-  <!-- <section v-if="values.length" class="!pt-10">
-    <div class="container max-w-2xl">
-      <p class="eyebrow mb-5 text-center">What We Stand For</p>
-      <ul class="grid gap-4 sm:grid-cols-2">
-        <li v-for="(value, i) in values" :key="i" class="rounded-md border border-line px-5 py-4 text-sm">
-          {{ value }}
+  <section class="!py-8 sm:!py-10">
+    <div class="container">
+      <p class="font-display text-2xl font-semibold sm:text-3xl text-center mb-8">Our Brand Values</p>
+      <ul class="grid gap-6 sm:grid-cols-2">
+        <li v-for="value in brandValues" :key="value.title" class="rounded-lg border border-line bg-surface p-6">
+          <p class="mb-2 font-display text-lg font-semibold">{{ value.title }}</p>
+          <p class="text-sm text-muted">{{ value.description }}</p>
         </li>
       </ul>
     </div>
-  </section> -->
+  </section>
+
+  <section class="!py-8 sm:!py-10">
+    <div class="container text-center">
+      <p class="font-display text-2xl font-semibold sm:text-3xl mb-6">{{ heritage.eyebrow }}</p>
+      <h2 class="font-display text-2xl font-semibold sm:text-3xl pb-8">{{ heritage.heading }}</h2>
+    </div>
+  </section>
 </template>

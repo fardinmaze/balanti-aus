@@ -8,7 +8,7 @@ export const footerLinks = {
     { label: "Size Guide", href: "/support#size-guide" },
     { label: "FAQ", href: "/support#faq" },
     { label: "Policies", href: "/support#policies" },
-    { label: "Our Story", href: "/about" },
+    { label: "About Us", href: "/about" },
     { label: "Contact", href: "/support#contact" },
   ]
 } as const;
