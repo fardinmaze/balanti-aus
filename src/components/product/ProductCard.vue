@@ -66,7 +66,7 @@ function goToOffset(offset: number) {
 
 <template>
   <RouterLink :to="`/products/${product.handle}`" class="group block">
-    <div class="relative aspect-[5/5] overflow-hidden rounded-none bg-surface">
+    <div class="relative aspect-[3/3] overflow-hidden rounded-none">
       <img
         v-if="cardImage"
         :src="cardImage"
@@ -148,13 +148,13 @@ function goToOffset(offset: number) {
       </button>
     </div>
     <div class="mt-4 space-y-1.5">
-      <h3 class="font-display text-lg font-semibold sm:text-xl">{{ product.name }}</h3>
+      <p class="font-display text-sm sm:text-lg font-medium">{{ product.name }}</p>
       <ul v-if="product.colorOptions.length" class="flex flex-wrap gap-1.5" aria-label="Available colors">
         <li v-for="color in product.colorOptions" :key="color.id">
           <button
             type="button"
-            class="block h-3.5 w-3.5 shrink-0 rounded-pill border transition-shadow"
-            :class="activeColor?.id === color.id ? 'border-ink ring-1 ring-ink ring-offset-1' : 'border-line'"
+            class="block h-3 w-3 shrink-0 rounded-pill border transition-shadow"
+            :class="activeColor?.id === color.id ? 'border-ink ring-1 ring-ink ring-offset-1' : ''"
             :style="color.hexCode ? { backgroundColor: color.hexCode } : undefined"
             :aria-label="`Show ${color.name}`"
             :aria-pressed="activeColor?.id === color.id"

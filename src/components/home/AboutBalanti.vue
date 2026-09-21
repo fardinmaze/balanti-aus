@@ -1,39 +1,22 @@
-<script setup lang="ts">
-import { computed } from "vue";
-import { useCatalogue } from "@/lib/catalogue";
-import { isTopLevelCategory } from "@/lib/category";
-import CategoryIcon from "@/components/ui/icons/CategoryIcon.vue";
-
-// Subcategories (e.g. Oxfords, Loafers) rather than a fixed Boots/Loafers/
-// Sneakers list — driven by whatever the backend actually has seeded under
-// each top-level category (GET /site-api/all-categories). Icons fall back to
-// a generic shoe glyph for any slug that doesn't match a hand-drawn one.
-const catalogue = useCatalogue();
-const types = computed(() => catalogue.categories.value.filter((c) => !isTopLevelCategory(c)));
-</script>
+<script setup lang="ts"></script>
 
 <template>
-  <section v-if="types.length" class="relative !p-0">
-    <div class="relative w-full overflow-hidden py-16 sm:py-20 lg:py-24">
-      <img src="/section.png" alt="" aria-hidden="true" class="absolute inset-0 h-full w-full object-cover" />
+  <section class="relative !p-0">
+    <div class="relative w-full overflow-hidden">
+      <img src="/section.png" alt="" aria-hidden="true" class="h-[95vh] w-full object-cover sm:h-auto" />
       <div class="absolute inset-0 bg-black/45" aria-hidden="true" />
-      <div class="container relative text-center">
-        <h2 class="!text-white">Shop by Type</h2>
-        <div class="mt-10 grid grid-cols-2 gap-x-6 gap-y-10 sm:grid-cols-4">
+      <div class="absolute inset-0 flex items-center">
+        <div class="container relative text-center">
+          <h6 class="!text-white inline-block border-b border-white/70">About Balanti</h6>
+          <h2 class="!text-white pt-6">Crafted for Those Who Value More</h2>
+          <p class="mx-auto mt-6 max-w-5xl text-white/85 text-sm sm:text-base leading-relaxed">
+            Balanti is a premier Australian footwear brand that brings together the elegance of Italian-inspired design with the strength and character of local craftsmanship. Established in Sydney in 2000, Balanti has built its identity around a simple philosophy: quality should be seen, felt, and experienced in every step.
+          </p>
           <RouterLink
-            v-for="type in types"
-            :key="type.id"
-            :to="`/catalogue?category=${type.slug}`"
-            class="group flex flex-col items-center gap-3"
+            to="/about"
+            class="mt-8 inline-flex h-10 items-center justify-center rounded-pill border border-white px-5 text-sm font-semibold !text-white transition-colors hover:bg-white hover:!text-ink"
           >
-            <span
-              class="flex h-16 w-16 items-center justify-center overflow-hidden rounded-pill border border-white/70 text-white transition-colors"
-              :class="!type.image && 'group-hover:border-white group-hover:bg-white group-hover:text-ink'"
-            >
-              <img v-if="type.image" :src="type.image" :alt="type.name" class="h-full w-full object-cover" />
-              <CategoryIcon v-else :name="type.slug" class="h-7 w-7" />
-            </span>
-            <span class="text-sm font-medium text-white">{{ type.name }}</span>
+            More About Us
           </RouterLink>
         </div>
       </div>

@@ -1,17 +1,19 @@
 <script setup lang="ts">
 import Hero from "@/components/home/Hero.vue";
-import ProductRail from "@/components/home/ProductRail.vue";
-import NewArrivals from "@/components/home/NewArrivals.vue";
+import ExploreProducts from "@/components/home/ExploreProducts.vue";
+import FeaturedAndNew from "@/components/home/FeaturedAndNew.vue";
 import ShopByCategory from "@/components/home/ShopByCategory.vue";
-import OnSaleProducts from "@/components/home/onSaleProducts.vue";
-import ShopByType from "@/components/home/ShopByType.vue";
+import TrendingRail from "@/components/home/TrendingRail.vue";
+import PopularGrid from "@/components/home/PopularGrid.vue";
+import AboutBalanti from "@/components/home/AboutBalanti.vue";
 </script>
 
 <template>
   <Hero />
-  <ProductRail />
-  <NewArrivals class="!pt-0" />
-  <ShopByCategory class="!pt-0" />
-  <OnSaleProducts class="!pt-0" />
-  <!-- <ShopByType /> -->
+  <ExploreProducts class="!pt-16 !pb-16 sm:!pt-28 sm:!pb-28" />
+  <FeaturedAndNew class="!pt-0 !pb-16 sm:!pb-20" />
+  <ShopByCategory class="!pt-0 !pb-0" />
+  <TrendingRail class="!pt-20 sm:!pt-28 !pb-16 sm:!pb-28" />
+  <PopularGrid class="!pt-20 sm:!pt-28 !pb-20 sm:!pb-28" />
+  <AboutBalanti />
 </template>

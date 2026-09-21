@@ -35,7 +35,7 @@ const activeSocialLinks = computed(() => {
 
 <template>
   <footer class="border-t border-line bg-surface">
-    <div class="container grid gap-10 py-12 sm:grid-cols-3">
+    <div class="container grid gap-10 py-20 sm:grid-cols-3">
       <div>
         <RouterLink to="/" class="inline-flex items-center">
           <img src="/balanti-logo-11.png" :alt="brand.name" class="h-14 lg:h-16 w-auto" />

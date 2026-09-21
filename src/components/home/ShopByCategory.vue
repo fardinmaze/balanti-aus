@@ -14,8 +14,8 @@ const catalogue = useCatalogue();
 <template>
   <Spinner v-if="catalogue.loading.value && !catalogue.topCategories.value.length" label="Loading categories…" />
   <section v-else-if="catalogue.topCategories.value.length">
-    <h2 class="container">Shop by Category</h2>
-    <div class="mt-6 grid grid-cols-2 sm:grid-cols-2">
+    <!-- <h2 class="container">Shop by Category</h2> -->
+    <div class="grid grid-cols-1 sm:grid-cols-2">
       <RouterLink
         v-for="cat in catalogue.topCategories.value"
         :key="cat.id"
