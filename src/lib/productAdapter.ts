@@ -1,10 +1,12 @@
+import { resolveMediaUrl } from "@/api/http";
 import type { BackendProduct, BackendProductCategoryRef, BackendProductImage, BackendProductVariation } from "@/api/types";
-import type { ColorOption, ColorPhoto, Product, ProductCategory, Size, SizeOption, StockVariation } from "@/types/product";
+import type { ColorOption, ColorPhoto, Product, ProductAttributeItem, ProductCategory, Size, SizeOption, StockVariation } from "@/types/product";
 
 /**
  * Maps the live Balanti backend's Product shape onto the frontend's display
  * shape. `description`/`details` are rendered verbatim as HTML (v-html) from
- * `Product.description`/`Product.sell_description` — never reformatted or
+ * `Product.description`/`Product.detail` (falling back to the older
+ * `sell_description` name when `detail` is absent) — never reformatted or
  * fabricated. The backend has no equivalent for `targetCustomer` — see
  * FRONTEND_API_GUIDE.md §8 (product fields truncated in the doc as "+36 more").
  * Category/subcategory are read straight off the backend's Category rows
@@ -103,6 +105,24 @@ function adaptStockVariations(product: BackendProduct): StockVariation[] {
   }));
 }
 
+/** Parses `title1`/`image1`, `title2`/`image2`, ... pairs off `product.attributes` — sorted by index, skipping any pair missing either half. */
+function adaptAttributeItems(product: BackendProduct): ProductAttributeItem[] {
+  const attributes = product.attributes;
+  if (!attributes || typeof attributes !== "object") return [];
+
+  const indices = new Set<number>();
+  for (const key of Object.keys(attributes)) {
+    const match = /^(?:title|image)(\d+)$/.exec(key);
+    if (match) indices.add(Number(match[1]));
+  }
+
+  return [...indices]
+    .sort((a, b) => a - b)
+    .map((n) => ({ title: attributes[`title${n}`], image: attributes[`image${n}`] }))
+    .filter((item): item is ProductAttributeItem => Boolean(item.title && item.image))
+    .map((item) => ({ title: item.title, image: resolveMediaUrl(item.image) }));
+}
+
 export function adaptProduct(product: BackendProduct): Product {
   const colorway = product.colorway ?? product.color ?? "";
   const onSale = Boolean(product.on_sale) && typeof product.offer_price === "number" && product.offer_price < product.sell_price;
@@ -124,7 +144,7 @@ export function adaptProduct(product: BackendProduct): Product {
     subcategory: toCategory(product.subcategory),
     targetCustomer: "",
     description: product.description ?? "",
-    details: product.sell_description ?? "",
+    details: product.detail ?? product.sell_description ?? "",
     sizes: adaptSizes(product),
     colorOptions: adaptColorOptions(product),
     sizeOptions: adaptSizeOptions(product),
@@ -136,6 +156,9 @@ export function adaptProduct(product: BackendProduct): Product {
     thumbnail: thumbnails[0] ?? images[0],
     stockOnHand: typeof product.ps_on_hand === "number" ? product.ps_on_hand : null,
     averageRating: product.average_rating,
+    attributeItems: adaptAttributeItems(product),
+    styling: product.styling ?? undefined,
+    occasion: product.occasion ?? undefined,
   };
 }
 

@@ -182,8 +182,8 @@ onUnmounted(() => {
 
 <template>
   <div class="flex flex-col gap-3">
-    <div class="flex items-start gap-3">
-      <div class="relative w-full max-w-[520px] flex-1 min-w-0">
+    <div class="flex flex-col gap-3 sm:flex-row sm:items-start">
+      <div class="relative aspect-square min-w-0 shrink w-[min(100%,calc(100vh-180px))] lg:w-[min(640px,calc(100vh-180px))] xl:w-[min(840px,calc(100vh-180px))]">
         <button
           v-if="heroImage"
           type="button"
@@ -226,14 +226,16 @@ onUnmounted(() => {
         </template>
       </div>
 
-      <div class="flex max-h-[520px] shrink-0 flex-col gap-2 overflow-y-auto">
+      <div
+        class="flex shrink-0 flex-row gap-1 sm:gap-3 overflow-x-auto pb-1 sm:max-h-[min(840px,calc(100vh-180px))] sm:flex-col sm:overflow-x-visible sm:overflow-y-auto sm:pb-0"
+      >
         <button
           v-for="thumb in thumbnails"
           :key="thumb.key"
           type="button"
           :aria-pressed="activeKey === thumb.key"
           :aria-label="`Show ${thumb.label}`"
-          class="h-20 w-20 shrink-0 overflow-hidden rounded-md border transition-opacity"
+          class="h-20 w-20 sm:h-24 sm:w-24 shrink-0 overflow-hidden rounded-md border transition-opacity md:h-32 md:w-32"
           :class="activeKey === thumb.key ? 'border-ink' : 'border-line opacity-70 hover:opacity-100'"
           @click="activeKey = thumb.key"
         >

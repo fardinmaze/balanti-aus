@@ -40,7 +40,8 @@ export const catalogueApi = {
   allCategories: () => http.get<BackendCategory[]>("/site-api/all-categories", { auth: false }).then((e) => e.data ?? []),
   topCategories: () => http.get<BackendCategory[]>("/site-api/top-categories", { auth: false }).then((e) => e.data ?? []),
 
-  products: (count = 20) => paged<BackendProduct>("/site-api/products", count),
+  products: (count = 20, page = 1, color?: string) =>
+    paged<BackendProduct>("/site-api/products", count, { page, ...(color ? { color } : {}) }),
   featuredProducts: (count = 20) => paged<BackendProduct>("/site-api/featured-products", count),
   hotProducts: (count = 20) => paged<BackendProduct>("/site-api/hot-products", count),
   onSaleProducts: (count = 20) => paged<BackendProduct>("/site-api/on-sale-products", count),
@@ -48,10 +49,10 @@ export const catalogueApi = {
   mostPopularProducts: (count = 20) => paged<BackendProduct>("/site-api/most-popular", count),
   relatedProducts: (slug: string, count = 8) => paged<BackendProduct>(`/site-api/related-products/${slug}`, count),
 
-  categoryProducts: (categorySlug: string, count = 20, page = 1) =>
-    paged<BackendProduct>(`/site-api/category-products/${categorySlug}`, count, { page }),
-  parentCategoryProducts: (categorySlug: string, count = 20, page = 1) =>
-    paged<BackendProduct>(`/site-api/parent-category-products/${categorySlug}`, count, { page }),
+  categoryProducts: (categorySlug: string, count = 20, page = 1, color?: string) =>
+    paged<BackendProduct>(`/site-api/category-products/${categorySlug}`, count, { page, ...(color ? { color } : {}) }),
+  parentCategoryProducts: (categorySlug: string, count = 20, page = 1, color?: string) =>
+    paged<BackendProduct>(`/site-api/parent-category-products/${categorySlug}`, count, { page, ...(color ? { color } : {}) }),
 
   product: (slug: string) => http.get<BackendProduct>(`/site-api/product/${slug}`, { auth: false }).then((e) => e.data),
 

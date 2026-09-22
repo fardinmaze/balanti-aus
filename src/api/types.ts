@@ -109,6 +109,8 @@ export type BackendProduct = {
   description?: string;
   /** Verified against a live response — the guide's assumed `short_description` name doesn't exist; this is the real field. */
   sell_description?: string;
+  /** Verified against a live response — rich-text material/construction breakdown (upper, lining, outsole, insole, ...), separate from `sell_description`. */
+  detail?: string;
   material?: string;
   color?: string;
   colorway?: string;
@@ -118,6 +120,12 @@ export type BackendProduct = {
   bmsm?: boolean;
   hot_item?: boolean;
   is_featured?: boolean;
+  /** Ad-hoc spec highlights — `title1`/`image1`, `title2`/`image2`, ... pairs, in no guaranteed order. */
+  attributes?: Record<string, string>;
+  /** Verified against a live response — `{ id, name }`, e.g. `{ id: 2, name: "Oxford" }`. */
+  styling?: { id: number; name: string } | null;
+  /** Verified against a live response — same shape as `styling`, e.g. `{ id: 3, name: "Formal Events" }`. */
+  occasion?: { id: number; name: string } | null;
   [extra: string]: unknown;
 };
 

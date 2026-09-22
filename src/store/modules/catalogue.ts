@@ -24,6 +24,14 @@ export type CatalogueState = {
   error: string | null;
 };
 
+/** Writes list-rail products into `byHandle` without clobbering an already detail-loaded entry — see `upsertProduct`. */
+function mergeByHandle(state: CatalogueState, products: Product[]) {
+  for (const p of products) {
+    if (state.detailLoadedHandles[p.handle]) continue;
+    state.byHandle[p.handle] = p;
+  }
+}
+
 function initialState(): CatalogueState {
   return {
     categories: [],
@@ -52,22 +60,26 @@ export const catalogue: Module<CatalogueState, RootState> = {
     },
     setProducts(state, products: Product[]) {
       state.products = products;
-      for (const p of products) state.byHandle[p.handle] = p;
+      mergeByHandle(state, products);
     },
     setFeatured(state, products: Product[]) {
       state.featured = products;
-      for (const p of products) state.byHandle[p.handle] = p;
+      mergeByHandle(state, products);
     },
     setHot(state, products: Product[]) {
       state.hot = products;
-      for (const p of products) state.byHandle[p.handle] = p;
+      mergeByHandle(state, products);
     },
     setOnSale(state, products: Product[]) {
       state.onSale = products;
-      for (const p of products) state.byHandle[p.handle] = p;
+      mergeByHandle(state, products);
     },
+    /** Skips the write when a full detail record is already cached for this handle — a list/search rail's
+     *  lighter product shape (no per-color photos, no `images`/`details`) must never clobber it; see
+     *  `detailLoadedHandles` above. `fetchProduct` marks `detailLoadedHandles` only *after* this commit, so
+     *  the initial detail-endpoint write for a handle still goes through. */
     upsertProduct(state, product: Product) {
-      state.byHandle[product.handle] = product;
+      mergeByHandle(state, [product]);
     },
     markDetailLoaded(state, handle: string) {
       state.detailLoadedHandles[handle] = true;
@@ -122,13 +134,13 @@ export const catalogue: Module<CatalogueState, RootState> = {
       return product;
     },
 
-    /** Products filed directly under this exact category (guide §5.1). Paginated 20 at a time, same as the other list endpoints — `count` is required or the backend 400s. */
+    /** Products filed directly under this exact category (guide §5.1). Paginated 20 at a time, same as the other list endpoints — `count` is required or the backend 400s. `color` is forwarded as-is (comma-joined when more than one is selected) for the backend to filter server-side. */
     async fetchCategoryProducts(
       { commit },
-      payload: { slug: string; count?: number; page?: number }
+      payload: { slug: string; count?: number; page?: number; color?: string }
     ): Promise<{ products: Product[]; hasMore: boolean }> {
-      const { slug, count = 20, page = 1 } = payload;
-      const result = await catalogueApi.categoryProducts(slug, count, page);
+      const { slug, count = 20, page = 1, color } = payload;
+      const result = await catalogueApi.categoryProducts(slug, count, page, color);
       const products = adaptProducts(result.results);
       for (const p of products) commit("upsertProduct", p);
       return { products, hasMore: result.next !== null };
@@ -137,10 +149,23 @@ export const catalogue: Module<CatalogueState, RootState> = {
     /** Products under this category and all of its subcategories — use for top-level category landing pages. */
     async fetchParentCategoryProducts(
       { commit },
-      payload: { slug: string; count?: number; page?: number }
+      payload: { slug: string; count?: number; page?: number; color?: string }
     ): Promise<{ products: Product[]; hasMore: boolean }> {
-      const { slug, count = 20, page = 1 } = payload;
-      const result = await catalogueApi.parentCategoryProducts(slug, count, page);
+      const { slug, count = 20, page = 1, color } = payload;
+      const result = await catalogueApi.parentCategoryProducts(slug, count, page, color);
+      const products = adaptProducts(result.results);
+      for (const p of products) commit("upsertProduct", p);
+      return { products, hasMore: result.next !== null };
+    },
+
+    /** The unscoped "All Products" rail, filterable by color — used when the catalogue page has a color filter
+     *  active but no category selected (the plain `fetchInitial` load isn't filter-aware). */
+    async fetchProducts(
+      { commit },
+      payload: { count?: number; page?: number; color?: string } = {}
+    ): Promise<{ products: Product[]; hasMore: boolean }> {
+      const { count = 20, page = 1, color } = payload;
+      const result = await catalogueApi.products(count, page, color);
       const products = adaptProducts(result.results);
       for (const p of products) commit("upsertProduct", p);
       return { products, hasMore: result.next !== null };

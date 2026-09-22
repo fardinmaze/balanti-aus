@@ -19,13 +19,18 @@ export function useCatalogue() {
     error: computed(() => store.state.catalogue.error),
     getByHandle: (handle: string) => store.getters["catalogue/productByHandle"](handle) as Product | undefined,
     fetchProduct: (slug: string) => store.dispatch("catalogue/fetchProduct", slug) as Promise<Product | undefined>,
-    fetchCategoryProducts: (categorySlug: string, count?: number, page?: number) =>
-      store.dispatch("catalogue/fetchCategoryProducts", { slug: categorySlug, count, page }) as Promise<{
+    fetchProducts: (count?: number, page?: number, color?: string) =>
+      store.dispatch("catalogue/fetchProducts", { count, page, color }) as Promise<{
         products: Product[];
         hasMore: boolean;
       }>,
-    fetchParentCategoryProducts: (categorySlug: string, count?: number, page?: number) =>
-      store.dispatch("catalogue/fetchParentCategoryProducts", { slug: categorySlug, count, page }) as Promise<{
+    fetchCategoryProducts: (categorySlug: string, count?: number, page?: number, color?: string) =>
+      store.dispatch("catalogue/fetchCategoryProducts", { slug: categorySlug, count, page, color }) as Promise<{
+        products: Product[];
+        hasMore: boolean;
+      }>,
+    fetchParentCategoryProducts: (categorySlug: string, count?: number, page?: number, color?: string) =>
+      store.dispatch("catalogue/fetchParentCategoryProducts", { slug: categorySlug, count, page, color }) as Promise<{
         products: Product[];
         hasMore: boolean;
       }>,

@@ -12,6 +12,9 @@ import ReviewsSection from "@/components/product/ReviewsSection.vue";
 import PriceTag from "@/components/ui/Price.vue";
 import HeartIcon from "@/components/ui/icons/HeartIcon.vue";
 import ProductDetailSkeleton from "@/components/product/ProductDetailSkeleton.vue";
+import Breadcrumb from "@/components/product/Breadcrumb.vue";
+import ProductAttributes from "@/components/product/ProductAttributes.vue";
+import ProductTabs from "@/components/product/ProductTabs.vue";
 
 const route = useRoute();
 const catalogue = useCatalogue();
@@ -61,13 +64,17 @@ const reassuranceItems = computed(() => [freeShippingLine.value, '— Australia-
 
 <template>
   <section v-if="product" class="!pt-8 sm:!pt-12">
-    <div class="container grid gap-10 lg:grid-cols-[minmax(0,640px)_1fr] lg:gap-16">
+    <div class="container">
+      <Breadcrumb :product="product" />
+    </div>
+
+    <div class="container mt-6 grid gap-10 lg:grid-cols-[auto_minmax(0,1fr)] lg:gap-12">
       <Gallery :product="product" :active-photos="selectedColorPhotos" />
 
-      <div>
+      <div class="flex flex-col">
         <div class="flex items-start justify-between gap-4">
           <div>
-            <h1 class="font-display text-3xl font-semibold sm:text-4xl">{{ product.name }}</h1>
+            <p class="font-display text-2xl font-semibold sm:text-4xl">{{ product.name }}</p>
           </div>
           <button
             type="button"
@@ -92,19 +99,28 @@ const reassuranceItems = computed(() => [freeShippingLine.value, '— Australia-
           Stock out
         </span>
 
-        <p v-if="product.description" class="mt-6 text-muted" v-html="product.description"></p>
+        <p v-if="product.description" class="mt-6 text-sm leading-7 text-muted border-b border-line pb-6" v-html="product.description"></p>
 
-        <div class="mt-8">
+        <div class="mt-6">
           <BuyBox :product="product" @update:photos="selectedColorPhotos = $event" />
         </div>
 
-        <div v-if="product.details" class="mt-8 space-y-2 border-t border-line pt-6">
-          <p v-if="product.details" class="mt-6 text-muted" v-html="product.details"></p>
+        <div class="mt-8 border-t border-line pt-7">
+          <ul v-if="product.styling || product.occasion" class="flex flex-wrap gap-2 mb-6">
+            <li v-if="product.styling" class="eyebrow rounded-pill border border-line px-3 py-1.5">{{ product.styling?.name }}</li>
+            <li v-if="product.occasion" class="eyebrow rounded-pill border border-line px-3 py-1.5">{{ product.occasion?.name }}</li>
+          </ul>
+
+          <ProductAttributes :product="product" />
         </div>
 
         <ul class="mt-6 flex flex-wrap gap-x-4 gap-y-1">
           <li v-for="(item, index) in reassuranceItems" :key="index" class="text-xs text-muted">{{ item }}</li>
         </ul>
+
+        <div class="mt-8">
+          <ProductTabs :product="product" />
+        </div>
       </div>
     </div>
 
@@ -121,7 +137,7 @@ const reassuranceItems = computed(() => [freeShippingLine.value, '— Australia-
     </div>
   </section>
 
-  <section v-else-if="loading" class="!pt-8 sm:!pt-12">
+  <section v-else-if="loading" class="!pt-8 sm:!pt-12 max-w-[1280px] mx-auto">
     <ProductDetailSkeleton />
   </section>
 </template>

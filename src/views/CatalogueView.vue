@@ -30,27 +30,43 @@ const categoryLoading = ref(false);
 const categoryLoadingMore = ref(false);
 const categoryPage = ref(1);
 const categoryHasMore = ref(false);
+const selectedColor = ref<string | null>(null);
 
-function categoryFetcher(slug: string) {
+type ProductFetcher = (count: number, page: number, color?: string) => Promise<{ products: Product[]; hasMore: boolean }>;
+
+/** Uniform (count, page, color) fetcher for the current category scope — falls back to the unscoped
+ *  "All Products" rail (still color-filterable) when no category is selected. */
+function productsFetcher(slug: string | null): ProductFetcher | null {
+  if (!slug) return (count, page, color) => catalogue.fetchProducts(count, page, color);
   const category = catalogue.categories.value.find((c) => c.slug === slug);
   if (!category) return null;
-  return isTopLevelCategory(category) ? catalogue.fetchParentCategoryProducts : catalogue.fetchCategoryProducts;
+  const fetch = isTopLevelCategory(category) ? catalogue.fetchParentCategoryProducts : catalogue.fetchCategoryProducts;
+  return (count, page, color) => fetch(slug, count, page, color);
 }
 
-async function loadCategoryProducts(slug: string | null) {
+function selectedColorParam(): string | undefined {
+  return selectedColor.value ?? undefined;
+}
+
+/** Refetches from the backend whenever the category or color selection changes. With neither filter active,
+ *  `categoryScopedProducts` stays null and the page falls back to the already-loaded `catalogue.products`
+ *  rail — no need to re-request it. */
+async function loadCategoryProducts() {
   categoryPage.value = 1;
   categoryHasMore.value = false;
-  if (!slug) {
+  const slug = selectedCategorySlug.value;
+  const color = selectedColorParam();
+  if (!slug && !color) {
     categoryScopedProducts.value = null;
     return;
   }
-  const fetcher = categoryFetcher(slug);
+  const fetcher = productsFetcher(slug);
   if (!fetcher) {
     categoryScopedProducts.value = [];
     return;
   }
   categoryLoading.value = true;
-  const { products, hasMore } = await fetcher(slug, CATEGORY_PAGE_SIZE, 1);
+  const { products, hasMore } = await fetcher(CATEGORY_PAGE_SIZE, 1, color);
   categoryScopedProducts.value = products;
   categoryHasMore.value = hasMore;
   categoryLoading.value = false;
@@ -58,12 +74,13 @@ async function loadCategoryProducts(slug: string | null) {
 
 async function loadMoreCategoryProducts() {
   const slug = selectedCategorySlug.value;
-  if (!slug || categoryLoadingMore.value || !categoryHasMore.value) return;
-  const fetcher = categoryFetcher(slug);
+  const color = selectedColorParam();
+  if ((!slug && !color) || categoryLoadingMore.value || !categoryHasMore.value) return;
+  const fetcher = productsFetcher(slug);
   if (!fetcher) return;
   categoryLoadingMore.value = true;
   const nextPage = categoryPage.value + 1;
-  const { products, hasMore } = await fetcher(slug, CATEGORY_PAGE_SIZE, nextPage);
+  const { products, hasMore } = await fetcher(CATEGORY_PAGE_SIZE, nextPage, color);
   categoryScopedProducts.value = [...(categoryScopedProducts.value ?? []), ...products];
   categoryPage.value = nextPage;
   categoryHasMore.value = hasMore;
@@ -71,14 +88,13 @@ async function loadMoreCategoryProducts() {
 }
 
 watch(
-  [selectedCategorySlug, () => catalogue.categories.value.length],
-  () => loadCategoryProducts(selectedCategorySlug.value),
+  [selectedCategorySlug, selectedColor, () => catalogue.categories.value.length],
+  loadCategoryProducts,
   { immediate: true }
 );
 
 const baseProducts = computed(() => categoryScopedProducts.value ?? catalogue.products.value);
 
-const ALL_COLORS = computed(() => [...new Set(baseProducts.value.map((p) => p.colorway).filter(Boolean))].sort());
 const ALL_MATERIALS = computed(() => [...new Set(baseProducts.value.map((p) => p.material).filter(Boolean))].sort());
 // Fixed bounds rather than derived from baseProducts: category/catalogue products
 // load asynchronously and often arrive in more than one batch, so a range derived
@@ -86,14 +102,24 @@ const ALL_MATERIALS = computed(() => [...new Set(baseProducts.value.map((p) => p
 // (e.g. a 2-product subcategory briefly showing only the first product's price).
 const PRICE_MIN = 0;
 const PRICE_MAX = 5000;
-const colorSwatches = computed(() => {
-  const swatches: Record<string, string> = {};
-  for (const p of baseProducts.value) if (p.colorway && !swatches[p.colorway]) swatches[p.colorway] = p.tone;
-  return swatches;
-});
+
+// Fixed list rather than derived from baseProducts, same reasoning as PRICE_MIN/MAX
+// above — always show the full set of colorways the shop carries, not just whatever
+// happens to be in the currently-loaded batch.
+const COLOR_OPTIONS = ["Black", "Brown", "White", "Charcoal", "Olive", "Blue", "Navy Blue", "Mustard", "Taupe"];
+const COLOR_SWATCH_HEX: Record<string, string> = {
+  Black: "#1a1a1a",
+  Brown: "#6b4226",
+  White: "#f5f5f0",
+  Charcoal: "#36454f",
+  Olive: "#6b6b2a",
+  Blue: "#2a4d8f",
+  "Navy Blue": "#0f1f3d",
+  Mustard: "#c9a227",
+  Taupe: "#8b7d6b",
+};
 
 const showFilters = ref(true);
-const selectedColors = ref<string[]>([]);
 const selectedMaterials = ref<string[]>([]);
 const priceMin = ref(PRICE_MIN);
 const priceMax = ref(PRICE_MAX);
@@ -108,7 +134,8 @@ function toArray(value: unknown): string[] {
 function hydrateFromQuery() {
   const q = route.query;
   selectedCategorySlug.value = q.category ? String(q.category) : null;
-  selectedColors.value = toArray(q.color).filter((v) => ALL_COLORS.value.includes(v));
+  const colorParam = q.color ? String(q.color) : null;
+  selectedColor.value = colorParam && COLOR_OPTIONS.includes(colorParam) ? colorParam : null;
   selectedMaterials.value = toArray(q.material).filter((v) => ALL_MATERIALS.value.includes(v));
   priceMin.value = q.price_min ? Math.max(PRICE_MIN, Number(q.price_min)) : PRICE_MIN;
   priceMax.value = q.price_max ? Math.min(PRICE_MAX, Number(q.price_max)) : PRICE_MAX;
@@ -121,7 +148,7 @@ watch(() => route.query, hydrateFromQuery, { immediate: true });
 function syncQuery() {
   const query: Record<string, string> = {};
   if (selectedCategorySlug.value) query.category = selectedCategorySlug.value;
-  if (selectedColors.value.length) query.color = selectedColors.value.join(",");
+  if (selectedColor.value) query.color = selectedColor.value;
   if (selectedMaterials.value.length) query.material = selectedMaterials.value.join(",");
   if (priceMin.value !== PRICE_MIN) query.price_min = String(priceMin.value);
   if (priceMax.value !== PRICE_MAX) query.price_max = String(priceMax.value);
@@ -136,16 +163,19 @@ function selectCategory(slug: string | null) {
 
 function clearAll() {
   selectedCategorySlug.value = null;
-  selectedColors.value = [];
+  selectedColor.value = null;
   selectedMaterials.value = [];
   priceMin.value = PRICE_MIN;
   priceMax.value = PRICE_MAX;
   syncQuery();
 }
 
+// Color is intentionally not re-filtered here: whenever `selectedColor` is set, `loadCategoryProducts`
+// always re-fetches `baseProducts` from the backend with that color as a query param (see the watcher
+// above) — the backend's own match may not produce a `colorway` string that's byte-identical to our
+// fixed filter label, so re-filtering client-side on top could silently drop a correct server result.
 const filtered = computed(() => {
   let list = baseProducts.value;
-  if (selectedColors.value.length) list = list.filter((p) => selectedColors.value.includes(p.colorway));
   if (selectedMaterials.value.length) list = list.filter((p) => selectedMaterials.value.includes(p.material));
   list = list.filter((p) => p.price >= priceMin.value && p.price <= priceMax.value);
   return list;
@@ -180,12 +210,12 @@ const chips = computed<Chip[]>(() => {
       remove: () => selectCategory(null),
     });
   }
-  for (const c of selectedColors.value) {
+  if (selectedColor.value) {
     list.push({
-      key: `color-${c}`,
-      label: c,
+      key: `color-${selectedColor.value}`,
+      label: selectedColor.value,
       remove: () => {
-        selectedColors.value = selectedColors.value.filter((v) => v !== c);
+        selectedColor.value = null;
         syncQuery();
       },
     });
@@ -294,20 +324,6 @@ const chips = computed<Chip[]>(() => {
             </label>
           </FilterGroup>
 
-          <!-- <FilterGroup heading="Color" :count="selectedColors.length">
-            <label v-for="c in ALL_COLORS" :key="c" class="flex items-center gap-3 text-sm">
-              <input
-                v-model="selectedColors"
-                type="checkbox"
-                :value="c"
-                class="h-4 w-4 accent-[var(--ink)]"
-                @change="syncQuery"
-              />
-              <span class="h-3 w-3 shrink-0 rounded-pill border border-line" :style="{ backgroundColor: colorSwatches[c] }" />
-              {{ c }}
-            </label>
-          </FilterGroup> -->
-
           <FilterGroup heading="Shop By Price">
             <PriceRangeSlider
               :min="PRICE_MIN"
@@ -318,6 +334,31 @@ const chips = computed<Chip[]>(() => {
               @update:model-max="priceMax = $event"
               @commit="syncQuery"
             />
+          </FilterGroup>
+
+          <FilterGroup heading="Color" :count="selectedColor ? 1 : 0">
+            <label class="flex items-center gap-3 text-sm">
+              <input
+                type="radio"
+                name="color"
+                :checked="!selectedColor"
+                class="h-4 w-4 accent-[var(--ink)]"
+                @change="selectedColor = null; syncQuery()"
+              />
+              Any Color
+            </label>
+            <label v-for="c in COLOR_OPTIONS" :key="c" class="flex items-center gap-3 text-sm">
+              <input
+                type="radio"
+                name="color"
+                :value="c"
+                :checked="selectedColor === c"
+                class="h-4 w-4 accent-[var(--ink)]"
+                @change="selectedColor = c; syncQuery()"
+              />
+              <span class="h-3 w-3 shrink-0 rounded-pill border border-line" :style="{ backgroundColor: COLOR_SWATCH_HEX[c] }" />
+              {{ c }}
+            </label>
           </FilterGroup>
 
           <!-- <FilterGroup heading="Upper Material" :count="selectedMaterials.length">
@@ -353,10 +394,10 @@ const chips = computed<Chip[]>(() => {
             class="grid grid-cols-2 items-start gap-6 sm:grid-cols-3 xl:grid-cols-4"
             :class="!showFilters && '2xl:grid-cols-5'"
           >
-            <ProductCard v-for="product in sorted" :key="product.handle" :product="product" />
+            <ProductCard v-for="product in sorted" :key="product.handle" :product="product" :selected-color="selectedColor" />
           </div>
 
-          <div v-if="selectedCategorySlug && categoryHasMore" class="mt-10 flex justify-center">
+          <div v-if="(selectedCategorySlug || selectedColor) && categoryHasMore" class="mt-10 flex justify-center">
             <button
               type="button"
               class="btn btn-ghost"

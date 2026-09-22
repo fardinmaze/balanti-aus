@@ -8,6 +8,20 @@
 
 const BASE_URL = (import.meta.env.VITE_API_BASE_URL ?? "https://api.balanti.com.au/api").replace(/\/+$/, "");
 
+const API_ORIGIN = (() => {
+  try {
+    return new URL(BASE_URL).origin;
+  } catch {
+    return "";
+  }
+})();
+
+/** Resolves a media path against the API's origin — a relative path like `/media/...` becomes absolute; an already-absolute URL is returned unchanged. */
+export function resolveMediaUrl(path: string): string {
+  if (/^https?:\/\//i.test(path)) return path;
+  return `${API_ORIGIN}${path.startsWith("/") ? "" : "/"}${path}`;
+}
+
 export type FieldErrors = Record<string, string[]>;
 
 export class ApiError extends Error {

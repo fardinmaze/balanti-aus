@@ -8,7 +8,7 @@ import HeartIcon from "@/components/ui/icons/HeartIcon.vue";
 import { useWishlist } from "@/lib/wishlist";
 import { useCart } from "@/lib/cart";
 
-const props = defineProps<{ product: Product }>();
+const props = defineProps<{ product: Product; selectedColor?: string | null }>();
 const wishlist = useWishlist();
 const cart = useCart();
 const router = useRouter();
@@ -32,10 +32,36 @@ function quickAdd() {
 // color that actually carries photos, same rule as the PDP gallery.
 const selectedColorId = ref<number | null>(null);
 
+function normalizeColorName(value: string): string {
+  return value.trim().toLowerCase().replace(/\s+/g, " ");
+}
+
+// When the catalogue's color filter is active, default the card to that color (if the
+// product carries it) instead of "first with photos" — a manual swatch click still wins.
+// Colors match on more than exact equality because a product's own `colorOptions[].name`
+// text doesn't always spell the color the same way our fixed filter list does ("Navy" vs
+// "Navy Blue", extra spacing, etc.) — an exact match wins when one exists, otherwise a
+// substring match either way still counts.
+const filterMatchedColor = computed<ColorOption | null>(() => {
+  if (!props.selectedColor) return null;
+  const target = normalizeColorName(props.selectedColor);
+  if (!target) return null;
+  const options = props.product.colorOptions;
+  const exact = options.find((c) => normalizeColorName(c.name) === target);
+  if (exact) return exact;
+  return (
+    options.find((c) => {
+      const name = normalizeColorName(c.name);
+      return name.includes(target) || target.includes(name);
+    }) ?? null
+  );
+});
+
 const activeColor = computed<ColorOption | null>(() => {
   if (!props.product.colorOptions.length) return null;
   return (
     props.product.colorOptions.find((c) => c.id === selectedColorId.value) ??
+    filterMatchedColor.value ??
     props.product.colorOptions.find((c) => c.photos.length > 0) ??
     props.product.colorOptions[0]
   );
@@ -62,11 +88,32 @@ function goToOffset(offset: number) {
   if (count < 2) return;
   activeImageIndex.value = (activeImageIndex.value + offset + count) % count;
 }
+
+// Touch swipe for mobile, where the hover-revealed arrow buttons are unreachable.
+const SWIPE_THRESHOLD = 40;
+let touchStartX = 0;
+let touchStartY = 0;
+
+function onTouchStart(event: TouchEvent) {
+  touchStartX = event.touches[0].clientX;
+  touchStartY = event.touches[0].clientY;
+}
+
+function onTouchEnd(event: TouchEvent) {
+  const deltaX = event.changedTouches[0].clientX - touchStartX;
+  const deltaY = event.changedTouches[0].clientY - touchStartY;
+  if (Math.abs(deltaX) < SWIPE_THRESHOLD || Math.abs(deltaX) < Math.abs(deltaY)) return;
+  goToOffset(deltaX < 0 ? 1 : -1);
+}
 </script>
 
 <template>
   <RouterLink :to="`/products/${product.handle}`" class="group block">
-    <div class="relative aspect-[3/3] overflow-hidden rounded-none">
+    <div
+      class="relative aspect-[3/3] overflow-hidden rounded-none touch-pan-y"
+      @touchstart="onTouchStart"
+      @touchend="onTouchEnd"
+    >
       <img
         v-if="cardImage"
         :src="cardImage"
@@ -91,7 +138,7 @@ function goToOffset(offset: number) {
       <template v-if="activePhotos.length > 1">
         <button
           type="button"
-          class="absolute left-2 top-1/2 z-10 flex h-7 w-7 -translate-y-1/2 items-center justify-center rounded-pill bg-paper/90 text-ink opacity-0 shadow-[var(--shadow-card)] transition-opacity group-hover:opacity-100"
+          class="absolute left-2 top-1/2 z-10 hidden h-7 w-7 -translate-y-1/2 items-center justify-center rounded-pill bg-paper/90 text-ink opacity-0 shadow-[var(--shadow-card)] transition-opacity group-hover:opacity-100 sm:flex"
           aria-label="Previous image"
           @click.stop.prevent="goToOffset(-1)"
         >
@@ -101,7 +148,7 @@ function goToOffset(offset: number) {
         </button>
         <button
           type="button"
-          class="absolute right-2 top-1/2 z-10 flex h-7 w-7 -translate-y-1/2 items-center justify-center rounded-pill bg-paper/90 text-ink opacity-0 shadow-[var(--shadow-card)] transition-opacity group-hover:opacity-100"
+          class="absolute right-2 top-1/2 z-10 hidden h-7 w-7 -translate-y-1/2 items-center justify-center rounded-pill bg-paper/90 text-ink opacity-0 shadow-[var(--shadow-card)] transition-opacity group-hover:opacity-100 sm:flex"
           aria-label="Next image"
           @click.stop.prevent="goToOffset(1)"
         >

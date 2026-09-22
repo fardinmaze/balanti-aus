@@ -15,6 +15,9 @@ export type ProductCategory = { name: string; slug: string };
 export type ColorPhoto = { image: string; thumbnail: string };
 export type ColorOption = { id: number; name: string; hexCode: string | null; photos: ColorPhoto[] };
 export type SizeOption = { id: number; name: string };
+/** One `titleN`/`imageN` pair from the backend's `Product.attributes` (§ productAdapter.ts). */
+export type ProductAttributeItem = { title: string; image: string };
+
 export type StockVariation = {
   color: number | null;
   colorName: string | null;
@@ -71,4 +74,10 @@ export type Product = {
   averageRating?: number;
   /** Whole-product stock (`Product.ps_on_hand`) — `null` when the API didn't return it, never fabricated. */
   stockOnHand: number | null;
+  /** Spec highlights from `Product.attributes` (`title1`/`image1`, `title2`/`image2`, ...), in ascending index order — empty when the product carries none. */
+  attributeItems: ProductAttributeItem[];
+  /** `Product.styling`, e.g. `{ id: 2, name: "Oxford" }` — undefined when the API didn't return one. */
+  styling?: { id: number; name: string };
+  /** `Product.occasion`, e.g. `{ id: 3, name: "Formal Events" }` — undefined when the API didn't return one. */
+  occasion?: { id: number; name: string };
 };
