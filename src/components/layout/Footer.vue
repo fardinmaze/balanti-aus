@@ -35,8 +35,8 @@ const activeSocialLinks = computed(() => {
 
 <template>
   <footer class="border-t border-line bg-surface">
-    <div class="container grid gap-10 py-20 sm:grid-cols-3">
-      <div>
+    <div class="container grid items-start gap-10 py-20 sm:grid-cols-2 lg:grid-cols-4">
+      <div class="flex flex-col items-center text-center">
         <RouterLink to="/" class="inline-flex items-center">
           <img src="/balanti-logo-11.png" :alt="brand.name" class="h-14 lg:h-16 w-auto" />
         </RouterLink>
@@ -57,7 +57,7 @@ const activeSocialLinks = computed(() => {
         </div>
       </div>
 
-      <div>
+      <div class="flex flex-col items-center text-center">
         <p class="eyebrow mb-3">Help</p>
         <ul class="space-y-2">
           <li v-for="link in footerLinks.help" :key="link.href">
@@ -66,13 +66,17 @@ const activeSocialLinks = computed(() => {
         </ul>
       </div>
 
-      <div>
+      <div class="flex flex-col items-center text-center">
         <p class="eyebrow mb-3">Shop</p>
         <ul class="space-y-2">
           <li v-for="cat in catalogue.topCategories.value" :key="cat.id">
             <RouterLink :to="`/catalogue?category=${cat.slug}`" class="text-sm text-ink hover:opacity-70">{{ cat.name }}</RouterLink>
           </li>
         </ul>
+      </div>
+
+      <div class="flex flex-col items-center text-center">
+        <img src="/australian-defence-veteran.png" alt="Australian Defence Veteran Owned Business" class="h-24 w-auto" />
       </div>
     </div>
 

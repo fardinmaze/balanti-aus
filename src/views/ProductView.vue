@@ -7,6 +7,7 @@ import { useFreeShippingLine } from "@/lib/freeDelivery";
 import { useWishlist } from "@/lib/wishlist";
 import type { ColorPhoto, Product } from "@/types/product";
 import Gallery from "@/components/product/Gallery.vue";
+import ImageZoomViewer from "@/components/product/ImageZoomViewer.vue";
 import BuyBox from "@/components/product/BuyBox.vue";
 import ReviewsSection from "@/components/product/ReviewsSection.vue";
 import PriceTag from "@/components/ui/Price.vue";
@@ -51,6 +52,18 @@ watch(product, () => {
   selectedColorPhotos.value = [];
 });
 
+// Zoom viewer for the description's thumbnail strip (§ same modal as Gallery).
+// `images` and `thumbnails` are parallel arrays (API order) — a thumbnail at
+// index N opens the matching full-resolution photo at `images[N]`.
+const isThumbnailZoomOpen = ref(false);
+const thumbnailZoomIndex = ref(0);
+const thumbnailZoomImages = computed(() => (product.value?.images ?? []).map((url) => ({ url, alt: product.value!.name })));
+
+function openThumbnailZoom(index: number) {
+  thumbnailZoomIndex.value = index;
+  isThumbnailZoomOpen.value = true;
+}
+
 // Whole-product stock (Product.ps_on_hand) — the same figure checkout compares
 // against for a product with no color/size axis (guide §5.4). `null` means the
 // API didn't return it, so we don't claim a stock state we can't back up.
@@ -94,12 +107,25 @@ const reassuranceItems = computed(() => [freeShippingLine.value, '— Australia-
 
         <span
           v-if="isOutOfStock"
-          class="eyebrow mt-3 inline-block rounded-pill border border-sale px-3 py-1 text-sale"
+          class="eyebrow mt-3 inline-block rounded-pill border border-sale px-3 py-1 text-sale w-fit"
         >
           Stock out
         </span>
 
         <p v-if="product.description" class="mt-6 text-sm leading-7 text-muted border-b border-line pb-6" v-html="product.description"></p>
+
+        <div v-if="product.thumbnails?.length >= 1" class="mt-7 flex flex-wrap gap-3">
+          <div v-for="(item, index) in product.thumbnails" :key="item" class="flex items-center gap-3">
+            <button
+              type="button"
+              class="shrink-0 cursor-zoom-in rounded-md"
+              aria-label="Open full-size image viewer"
+              @click="openThumbnailZoom(index)"
+            >
+              <img :src="item" :alt="item" class="h-14 w-14 shrink-0 rounded-md border border-line object-cover" />
+            </button>
+          </div>
+        </div>
 
         <div class="mt-6">
           <BuyBox :product="product" @update:photos="selectedColorPhotos = $event" />
@@ -127,6 +153,14 @@ const reassuranceItems = computed(() => [freeShippingLine.value, '— Australia-
     <!-- <div class="container mt-16 max-w-3xl">
       <ReviewsSection :product-slug="product.handle" :average-rating="product.averageRating" />
     </div> -->
+
+    <ImageZoomViewer
+      v-model:open="isThumbnailZoomOpen"
+      :images="thumbnailZoomImages"
+      :index="thumbnailZoomIndex"
+      :label="product.name"
+      @update:index="thumbnailZoomIndex = $event"
+    />
   </section>
 
   <section v-else-if="notFound">
