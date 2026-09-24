@@ -20,7 +20,7 @@ const firstInStockSize = computed(() => props.product.sizes.find((size) => size.
 
 function quickAdd() {
   if (isMatrix.value) {
-    router.push(`/products/${props.product.handle}`);
+    router.push(productLink.value);
     return;
   }
   if (!firstInStockSize.value) return;
@@ -79,6 +79,12 @@ const cardImage = computed(() => {
   return photo?.thumbnail ?? photo?.image ?? props.product.thumbnail;
 });
 
+// Carry the card's current color to the PDP so it opens on the same swatch/photos (BuyBox reads `?color=`).
+const productLink = computed(() => ({
+  path: `/products/${props.product.handle}`,
+  query: activeColor.value ? { color: String(activeColor.value.id) } : undefined,
+}));
+
 function selectColor(color: ColorOption) {
   selectedColorId.value = color.id;
 }
@@ -108,7 +114,7 @@ function onTouchEnd(event: TouchEvent) {
 </script>
 
 <template>
-  <RouterLink :to="`/products/${product.handle}`" class="group block">
+  <RouterLink :to="productLink" class="group block">
     <div
       class="relative aspect-[3/3] overflow-hidden rounded-none touch-pan-y"
       @touchstart="onTouchStart"

@@ -1,14 +1,16 @@
 <script setup lang="ts">
 import { ref, computed, watch } from "vue";
-import { useRouter } from "vue-router";
+import { useRoute, useRouter } from "vue-router";
 import type { ColorPhoto, Product } from "@/types/product";
 import { useCart } from "@/lib/cart";
 import BaseButton from "@/components/ui/BaseButton.vue";
+import ShoeIcon from "@/components/ui/icons/ShoeIcon.vue";
 
 const props = defineProps<{ product: Product }>();
 const emit = defineEmits<{ (e: "update:photos", photos: ColorPhoto[]): void }>();
 
 const cart = useCart();
+const route = useRoute();
 const router = useRouter();
 
 // Whole-product stock (Product.ps_on_hand) — `null` means the API didn't return it, so don't block on it.
@@ -27,9 +29,15 @@ const selectedSize = ref<string | null>(null);
 
 const showSelectionError = ref(false);
 
-/** First color in API order — selected by default so the gallery has a photo set to show before the shopper picks anything. */
+/**
+ * Color chosen on the product card (`?color=<id>`, see ProductCard.vue) if this product carries it,
+ * otherwise the first color in API order — selected by default so the gallery has a photo set to
+ * show before the shopper picks anything.
+ */
 function applyDefaultColor() {
-  const first = props.product.colorOptions[0];
+  const requestedId = Number(route.query.color);
+  const first =
+    props.product.colorOptions.find((c) => c.id === requestedId) ?? props.product.colorOptions[0];
   if (!first) {
     selectedColorId.value = null;
     emit("update:photos", []);
@@ -179,9 +187,15 @@ function buyNow() {
       </template>
 
       <template v-if="requireSize">
-        <legend class="eyebrow mb-2 mt-6">
+        <legend class="eyebrow mb-2 mt-6 flex w-full items-center justify-between gap-3">
           Size
-          <RouterLink to="/support#size-guide" class="ml-1 font-semibold">- View Size guide</RouterLink>
+          <RouterLink
+            to="/support#size-guide"
+            class="inline-flex items-center gap-2 rounded-md border border-line px-3 py-2 text-xs font-semibold transition-colors hover:border-ink"
+          >
+            <ShoeIcon class="h-4 w-4" />
+            View size guide
+          </RouterLink>
         </legend>
         <div class="grid grid-cols-4 sm:grid-cols-8 lg:grid-cols-6 xl:grid-cols-8 gap-2" role="radiogroup" aria-label="Select a size">
           <button
@@ -206,9 +220,15 @@ function buyNow() {
     </fieldset>
 
     <fieldset v-else>
-      <legend class="eyebrow mb-2">
+      <legend class="eyebrow mb-2 flex w-full items-center justify-between gap-3">
         Size
-        <RouterLink to="/support#size-guide" class="ml-1 underline">Size guide</RouterLink>
+        <RouterLink
+          to="/support#size-guide"
+          class="inline-flex min-h-[var(--tap-min)] items-center gap-2 rounded-md border border-line px-3 text-xs font-semibold transition-colors hover:border-ink"
+        >
+          <ShoeIcon class="h-4 w-4" />
+          View size guide
+        </RouterLink>
       </legend>
       <div class="grid grid-cols-4 gap-2" role="radiogroup" aria-label="Select a size">
         <button
