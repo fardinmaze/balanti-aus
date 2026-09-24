@@ -114,16 +114,19 @@ const reassuranceItems = computed(() => [freeShippingLine.value, '— Australia-
 
         <p v-if="product.description" class="mt-6 text-sm leading-7 text-muted border-b border-line pb-6" v-html="product.description"></p>
 
-        <div v-if="product.thumbnails?.length >= 1" class="mt-7 flex flex-wrap gap-3">
-          <div v-for="(item, index) in product.thumbnails" :key="item" class="flex items-center gap-3">
-            <button
-              type="button"
-              class="shrink-0 cursor-zoom-in rounded-md"
-              aria-label="Open full-size image viewer"
-              @click="openThumbnailZoom(index)"
-            >
-              <img :src="item" :alt="item" class="h-14 w-14 shrink-0 rounded-md border border-line object-cover" />
-            </button>
+        <div class="mt-7">
+          <p class="eyebrow">Checkout How you look</p>
+          <div v-if="product.thumbnails?.length >= 1" class="mt-2 flex flex-wrap gap-3">
+            <div v-for="(item, index) in product.thumbnails" :key="item" class="flex items-center gap-3">
+              <button
+                type="button"
+                class="shrink-0 cursor-zoom-in rounded-md"
+                aria-label="Open full-size image viewer"
+                @click="openThumbnailZoom(index)"
+              >
+                <img :src="item" :alt="item" class="h-14 w-14 shrink-0 rounded-md border border-line object-cover" />
+              </button>
+            </div>
           </div>
         </div>
 
