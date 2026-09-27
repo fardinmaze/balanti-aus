@@ -9,7 +9,7 @@
  * Update both files together if the policy text changes.
  */
 
-const SUPPORT_EMAIL = "hello@balanti.com.au";
+const SUPPORT_EMAIL = "info@balanti.com.au";
 
 export type PolicyBlock = {
   heading: string;
@@ -209,7 +209,7 @@ export const policies: Policy[] = [
   },
   {
     id: "terms-of-use",
-    title: "Terms of Use",
+    title: "Terms and Conditions",
     summary: "The rules for using the Balanti website, your account, and content you submit.",
     blocks: [
       {

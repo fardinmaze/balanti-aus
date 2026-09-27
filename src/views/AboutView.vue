@@ -6,6 +6,10 @@ import { brandValues, heritage } from "@/content/copy";
   <section class="!pt-8 !pb-8 sm:!pt-12 sm:!pb-10 max-w-[1280px] mx-auto">
     <div class="container text-center">
       <p class="font-display text-2xl font-semibold sm:text-3xl">BALANTI — Crafted for Those Who Value More</p>
+      <div class="mt-6 flex flex-col items-center">
+        <img src="/australian-defence-veteran.png" alt="Australian Defence Veteran Owned Business" class="h-24 w-auto" />
+        <p class="mt-3 text-sm text-ink">Business Owned by Veteran</p>
+      </div>
       <p class="text-muted mt-6">Balanti is a premier Australian footwear brand that brings together the elegance of Italian-inspired design with the strength and character of local craftsmanship. Established in Sydney in 2000, Balanti has built its identity around a simple philosophy: quality should be seen, felt, and experienced in every step.</p>
       <p class="text-muted mt-3">From its beginnings in premium men’s leather footwear, Balanti developed a reputation for refined design, exceptional comfort, and dependable durability. Through its specialised manufacturing and distribution network, the brand steadily expanded its presence across the Australian market, earning the trust of customers and establishing strong relationships throughout major supply chains.</p>
       <p class="text-muted mt-3">Today, Balanti represents more than footwear—it represents heritage, craftsmanship, confidence, and timeless style. Its market-proven collection of full-leather footwear extends across both men’s and women’s ranges, created for people who appreciate sophisticated design without sacrificing everyday comfort and practicality.</p>

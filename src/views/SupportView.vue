@@ -4,7 +4,7 @@ import { policies, policiesLastUpdated } from "@/content/policies";
 import { settingsApi } from "@/api/settings";
 import type { ShopContactInfo } from "@/api/types";
 
-const FALLBACK_EMAIL = "hello@balanti.com.au";
+const FALLBACK_EMAIL = "info@balanti.com.au";
 
 const contactInfo = ref<ShopContactInfo | null>(null);
 onMounted(async () => {
@@ -12,27 +12,27 @@ onMounted(async () => {
 });
 
 const sizeChart = [
-  { mm: 245, cm: 24.5, bd: "39", auUk: "6", us: "7", eu: "39", fit: "True to size" },
-  { mm: 250, cm: 25.0, bd: "40", auUk: "6.5", us: "7.5", eu: "40", fit: "True to size" },
-  { mm: 255, cm: 25.5, bd: "40–41", auUk: "7", us: "8", eu: "40–41", fit: "True to size" },
-  { mm: 260, cm: 26.0, bd: "41", auUk: "7.5", us: "8.5", eu: "41", fit: "True to size" },
-  { mm: 265, cm: 26.5, bd: "42", auUk: "8", us: "9", eu: "42", fit: "True to size" },
-  { mm: 270, cm: 27.0, bd: "42–43", auUk: "8.5", us: "9.5", eu: "42–43", fit: "True to size" },
-  { mm: 275, cm: 27.5, bd: "43", auUk: "9", us: "10", eu: "43", fit: "True to size" },
-  { mm: 280, cm: 28.0, bd: "44", auUk: "9.5", us: "10.5", eu: "44", fit: "True to size" },
-  { mm: 285, cm: 28.5, bd: "45", auUk: "10.5", us: "11.5", eu: "45", fit: "Best for wider feet" },
-  { mm: 290, cm: 29.0, bd: "46", auUk: "11", us: "12", eu: "46", fit: "True to size" },
-  { mm: 295, cm: 29.5, bd: "47", auUk: "11.5", us: "12.5", eu: "47", fit: "Best for wider feet" },
-  { mm: 300, cm: 30.0, bd: "48", auUk: "12", us: "13", eu: "48", fit: "True to size" },
+  { mm: 245, cm: 24.5, auUk: "6", us: "7", eu: "39", fit: "True to size" },
+  { mm: 250, cm: 25.0, auUk: "6.5", us: "7.5", eu: "40", fit: "True to size" },
+  { mm: 255, cm: 25.5, auUk: "7", us: "8", eu: "40–41", fit: "True to size" },
+  { mm: 260, cm: 26.0, auUk: "7.5", us: "8.5", eu: "41", fit: "True to size" },
+  { mm: 265, cm: 26.5, auUk: "8", us: "9", eu: "42", fit: "True to size" },
+  { mm: 270, cm: 27.0, auUk: "8.5", us: "9.5", eu: "42–43", fit: "True to size" },
+  { mm: 275, cm: 27.5, auUk: "9", us: "10", eu: "43", fit: "True to size" },
+  { mm: 280, cm: 28.0, auUk: "9.5", us: "10.5", eu: "44", fit: "True to size" },
+  { mm: 285, cm: 28.5, auUk: "10.5", us: "11.5", eu: "45", fit: "Best for wider feet" },
+  { mm: 290, cm: 29.0, auUk: "11", us: "12", eu: "46", fit: "True to size" },
+  { mm: 295, cm: 29.5, auUk: "11.5", us: "12.5", eu: "47", fit: "Best for wider feet" },
+  { mm: 300, cm: 30.0, auUk: "12", us: "13", eu: "48", fit: "True to size" },
 ];
 
-const footLengthMm = ref<number | null>(null);
+const footLengthCm = ref<number | null>(null);
 
 const recommendedSize = computed(() => {
-  const target = footLengthMm.value;
+  const target = footLengthCm.value;
   if (!target) return null;
   return sizeChart.reduce((closest, row) =>
-    Math.abs(row.mm - target) < Math.abs(closest.mm - target) ? row : closest,
+    Math.abs(row.cm - target) < Math.abs(closest.cm - target) ? row : closest,
   );
 });
 
@@ -64,28 +64,28 @@ const faqs = [
     <div class="container max-w-3xl">
       <h2>Size Guide</h2>
       <p class="mb-4 text-muted">
-        Leather shoes fit differently across regions — convert your usual size below, or measure your foot length in millimetres for the most accurate fit.
+        Leather shoes fit differently across regions — convert your usual size below, or measure your foot length in centimetres for the most accurate fit.
       </p>
 
       <div class="mb-6">
         <label class="flex flex-col gap-1 text-sm">
-          <span class="font-semibold mb-1">Measure your foot (mm)</span>
+          <span class="font-semibold mb-1">Measure your foot (cm)</span>
           <input
-            v-model.number="footLengthMm"
+            v-model.number="footLengthCm"
             type="number"
-            step="5"
-            min="245"
-            max="300"
-            placeholder="e.g. 275"
+            step="0.5"
+            min="24.5"
+            max="30"
+            placeholder="e.g. 27.5"
             class="size-guide-input w-40 rounded-md border border-line bg-surface px-3 py-2 text-sm"
           />
         </label>
 
         <div v-if="recommendedSize" class="mt-4 max-w-xs rounded-lg border border-line bg-surface p-5">
           <p class="text-xs text-muted">{{ recommendedSize.mm }} mm ({{ recommendedSize.cm.toFixed(1) }} cm)</p>
-          <p class="mt-1 font-display text-2xl font-semibold">BD {{ recommendedSize.bd }}</p>
+          <p class="mt-1 font-display text-2xl font-semibold">AU/UK {{ recommendedSize.auUk }}</p>
           <p class="mt-1 text-sm text-muted">
-            AU/UK {{ recommendedSize.auUk }} · US {{ recommendedSize.us }} · EU {{ recommendedSize.eu }}
+            US {{ recommendedSize.us }} · EU {{ recommendedSize.eu }}
           </p>
           <p class="mt-3 text-sm font-semibold">{{ recommendedSize.fit }}</p>
         </div>
@@ -96,7 +96,6 @@ const faqs = [
           <thead>
             <tr class="border-b border-line">
               <th class="py-2 pr-4 font-semibold">Foot length</th>
-              <th class="py-2 pr-4 font-semibold">BD</th>
               <th class="py-2 pr-4 font-semibold">AU / UK</th>
               <th class="py-2 pr-4 font-semibold">US Men's</th>
               <th class="py-2 pr-4 font-semibold">EU</th>
@@ -106,12 +105,11 @@ const faqs = [
           <tbody>
             <tr
               v-for="row in sizeChart"
-              :key="row.bd"
+              :key="row.auUk"
               class="border-b border-line"
-              :class="{ 'bg-surface': recommendedSize?.bd === row.bd }"
+              :class="{ 'bg-surface': recommendedSize?.auUk === row.auUk }"
             >
               <td class="py-2 pr-4 whitespace-nowrap">{{ row.mm }} mm ({{ row.cm.toFixed(1) }} cm)</td>
-              <td class="py-2 pr-4">{{ row.bd }}</td>
               <td class="py-2 pr-4">{{ row.auUk }}</td>
               <td class="py-2 pr-4">{{ row.us }}</td>
               <td class="py-2 pr-4">{{ row.eu }}</td>

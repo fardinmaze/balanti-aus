@@ -77,6 +77,7 @@ const activeSocialLinks = computed(() => {
 
       <div class="flex flex-col items-center text-center">
         <img src="/australian-defence-veteran.png" alt="Australian Defence Veteran Owned Business" class="h-24 w-auto" />
+        <p class="mt-3 text-sm text-ink">Business Owned by Veteran</p>
       </div>
     </div>
 

@@ -101,7 +101,7 @@ const ALL_MATERIALS = computed(() => [...new Set(baseProducts.value.map((p) => p
 // from "whatever's loaded so far" could clip out products that haven't landed yet
 // (e.g. a 2-product subcategory briefly showing only the first product's price).
 const PRICE_MIN = 0;
-const PRICE_MAX = 5000;
+const PRICE_MAX = 500;
 
 // Fixed list rather than derived from baseProducts, same reasoning as PRICE_MIN/MAX
 // above — always show the full set of colorways the shop carries, not just whatever
@@ -177,7 +177,8 @@ function clearAll() {
 const filtered = computed(() => {
   let list = baseProducts.value;
   if (selectedMaterials.value.length) list = list.filter((p) => selectedMaterials.value.includes(p.material));
-  list = list.filter((p) => p.price >= priceMin.value && p.price <= priceMax.value);
+  // Slider at its top stop means "no upper limit", so products priced above PRICE_MAX aren't silently hidden.
+  list = list.filter((p) => p.price >= priceMin.value && (priceMax.value === PRICE_MAX || p.price <= priceMax.value));
   return list;
 });
 
@@ -251,7 +252,7 @@ const chips = computed<Chip[]>(() => {
       <div class="flex flex-wrap items-end justify-between gap-4 border-b border-line pb-6">
         <div>
           <h1>{{ heading }}</h1>
-          <p class="text-sm text-muted">{{ sorted.length }} {{ sorted.length === 1 ? "product" : "products" }}</p>
+          <!-- <p class="text-sm text-muted">{{ sorted.length }} {{ sorted.length === 1 ? "product" : "products" }}</p> -->
         </div>
 
         <div class="flex items-center gap-6">
