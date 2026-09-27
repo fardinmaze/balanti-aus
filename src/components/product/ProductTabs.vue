@@ -15,10 +15,19 @@ const TABS: { key: TabKey; label: string }[] = [
 ];
 
 const active = ref<TabKey>("details");
+const root = ref<HTMLElement | null>(null);
+
+/** Used by the description's "See more" — switch to Details and bring the tabs into view. */
+function openDetails() {
+  active.value = "details";
+  root.value?.scrollIntoView({ behavior: "smooth", block: "start" });
+}
+
+defineExpose({ openDetails });
 </script>
 
 <template>
-  <div>
+  <div ref="root" class="scroll-mt-6">
     <div role="tablist" aria-label="Product information" class="flex flex-wrap gap-x-6 gap-y-2 border-b border-line">
       <button
         v-for="tab in TABS"

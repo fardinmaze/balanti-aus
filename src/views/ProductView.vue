@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, ref, watch } from "vue";
+import { computed, nextTick, onBeforeUnmount, ref, watch } from "vue";
 import { useRoute } from "vue-router";
 import { useCatalogue } from "@/lib/catalogue";
 import { reassurance } from "@/content/copy";
@@ -71,6 +71,26 @@ const isOutOfStock = computed(() => product.value != null && product.value.stock
 
 watch(() => route.params.handle, (handle) => load(String(handle)), { immediate: true });
 
+// Description is capped at 2.5 lines; "See more" jumps to the Details tab.
+// Only shown when the text actually overflows the cap.
+const descriptionEl = ref<HTMLElement | null>(null);
+const productTabs = ref<InstanceType<typeof ProductTabs> | null>(null);
+const isDescriptionClamped = ref(false);
+
+function measureDescription() {
+  const el = descriptionEl.value;
+  isDescriptionClamped.value = !!el && el.scrollHeight > el.clientHeight + 1;
+}
+
+const descriptionObserver = new ResizeObserver(measureDescription);
+watch(descriptionEl, (el, prev) => {
+  if (prev) descriptionObserver.unobserve(prev);
+  if (el) descriptionObserver.observe(el);
+  measureDescription();
+});
+watch(() => product.value?.description, () => nextTick(measureDescription));
+onBeforeUnmount(() => descriptionObserver.disconnect());
+
 const freeShippingLine = useFreeShippingLine();
 const reassuranceItems = computed(() => [freeShippingLine.value, '— Australia-wide']);
 </script>
@@ -112,7 +132,22 @@ const reassuranceItems = computed(() => [freeShippingLine.value, '— Australia-
           Stock out
         </span>
 
-        <p v-if="product.description" class="mt-6 text-sm leading-7 text-muted border-b border-line pb-6" v-html="product.description"></p>
+        <div v-if="product.description" class="mt-6 border-b border-line pb-6">
+          <div
+            ref="descriptionEl"
+            class="max-h-[2.5lh] overflow-hidden text-sm leading-7 text-muted"
+            :class="{ 'mask-[linear-gradient(to_bottom,black_40%,transparent)]': isDescriptionClamped }"
+            v-html="product.description"
+          ></div>
+          <button
+            v-if="isDescriptionClamped"
+            type="button"
+            class="mt-2 text-sm font-medium underline underline-offset-4 hover:text-muted"
+            @click="productTabs?.openDetails()"
+          >
+            See more
+          </button>
+        </div>
 
         <div class="mt-7">
           <p class="eyebrow">Checkout How you look</p>
@@ -148,7 +183,7 @@ const reassuranceItems = computed(() => [freeShippingLine.value, '— Australia-
         </ul>
 
         <div class="mt-8">
-          <ProductTabs :product="product" />
+          <ProductTabs ref="productTabs" :product="product" />
         </div>
       </div>
     </div>
