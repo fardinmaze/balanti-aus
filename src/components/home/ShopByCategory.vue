@@ -1,5 +1,7 @@
 <script setup lang="ts">
+import { computed } from "vue";
 import { useCatalogue } from "@/lib/catalogue";
+import { isShownTopCategory } from "@/lib/category";
 import { toneForSeed } from "@/lib/productAdapter";
 import PlaceholderImage from "@/components/ui/PlaceholderImage.vue";
 import ChevronIcon from "@/components/ui/icons/ChevronIcon.vue";
@@ -9,15 +11,17 @@ import Spinner from "@/components/ui/Spinner.vue";
 // actually has seeded (GET /site-api/top-categories), not a fixed
 // Men/Women/Kids list.
 const catalogue = useCatalogue();
+
+const categories = computed(() => catalogue.topCategories.value.filter(isShownTopCategory));
 </script>
 
 <template>
-  <Spinner v-if="catalogue.loading.value && !catalogue.topCategories.value.length" label="Loading categories…" />
-  <section v-else-if="catalogue.topCategories.value.length">
+  <Spinner v-if="catalogue.loading.value && !categories.length" label="Loading categories…" />
+  <section v-else-if="categories.length">
     <!-- <h2 class="container">Shop by Category</h2> -->
     <div class="grid grid-cols-1 sm:grid-cols-2">
       <RouterLink
-        v-for="cat in catalogue.topCategories.value"
+        v-for="cat in categories"
         :key="cat.id"
         :to="`/catalogue?category=${cat.slug}`"
         class="group relative block aspect-[2/1] overflow-hidden sm:aspect-[2/1]"

@@ -2,7 +2,7 @@
 import { computed, ref, watch } from "vue";
 import { useRoute, useRouter } from "vue-router";
 import { useCatalogue } from "@/lib/catalogue";
-import { isTopLevelCategory } from "@/lib/category";
+import { isTopLevelCategory, parentCategoryQuerySlug, shownCategories } from "@/lib/category";
 import type { Product } from "@/types/product";
 import ProductCard from "@/components/product/ProductCard.vue";
 import FilterGroup from "@/components/catalogue/FilterGroup.vue";
@@ -40,8 +40,11 @@ function productsFetcher(slug: string | null): ProductFetcher | null {
   if (!slug) return (count, page, color) => catalogue.fetchProducts(count, page, color);
   const category = catalogue.categories.value.find((c) => c.slug === slug);
   if (!category) return null;
-  const fetch = isTopLevelCategory(category) ? catalogue.fetchParentCategoryProducts : catalogue.fetchCategoryProducts;
-  return (count, page, color) => fetch(slug, count, page, color);
+  if (isTopLevelCategory(category)) {
+    const querySlug = parentCategoryQuerySlug(slug);
+    return (count, page, color) => catalogue.fetchParentCategoryProducts(querySlug, count, page, color);
+  }
+  return (count, page, color) => catalogue.fetchCategoryProducts(slug, count, page, color);
 }
 
 function selectedColorParam(): string | undefined {
@@ -198,6 +201,7 @@ const sorted = computed(() => {
   }
 });
 
+const filterCategories = computed(() => shownCategories(catalogue.categories.value));
 const selectedCategory = computed(() => catalogue.categories.value.find((c) => c.slug === selectedCategorySlug.value));
 const heading = computed(() => selectedCategory.value?.name ?? "All Products");
 
@@ -311,7 +315,7 @@ const chips = computed<Chip[]>(() => {
               />
               All
             </label>
-            <label v-for="cat in catalogue.categories.value" :key="cat.id" class="flex items-center gap-3 text-sm">
+            <label v-for="cat in filterCategories" :key="cat.id" class="flex items-center gap-3 text-sm">
               <input
                 type="radio"
                 name="category"

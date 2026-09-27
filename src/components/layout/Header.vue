@@ -7,7 +7,7 @@ import { useCart } from "@/lib/cart";
 import { useWishlist } from "@/lib/wishlist";
 import { useAuth } from "@/lib/auth";
 import { useCatalogue } from "@/lib/catalogue";
-import { isChildOf } from "@/lib/category";
+import { isChildOf, isShownTopCategory } from "@/lib/category";
 import CartIcon from "@/components/ui/icons/CartIcon.vue";
 import HeartIcon from "@/components/ui/icons/HeartIcon.vue";
 import UserIcon from "@/components/ui/icons/UserIcon.vue";
@@ -44,7 +44,7 @@ const logoFilterClass = computed(() => (isOverHero.value ? "brightness-0 invert"
 // subcategories (GET /site-api/all-categories) rather than hand-authored copy.
 type NavItem = { label: string; href: string; columns: MegaMenuColumn[] };
 const navItems = computed<NavItem[]>(() =>
-  catalogue.topCategories.value.map((cat) => {
+  catalogue.topCategories.value.filter(isShownTopCategory).map((cat) => {
     const subcategories = catalogue.categories.value.filter((c) => isChildOf(c, cat.id));
     const columns: MegaMenuColumn[] = subcategories.length
       ? [
