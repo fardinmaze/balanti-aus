@@ -1,14 +1,14 @@
 <script setup lang="ts">
 import { computed, ref, watch } from "vue";
 import { useCatalogue } from "@/lib/catalogue";
-import { isChildOf, isTopLevelCategory } from "@/lib/category";
+import { isChildOf, isShownTopCategory, isTopLevelCategory } from "@/lib/category";
 import { toneForSeed } from "@/lib/productAdapter";
 import PlaceholderImage from "@/components/ui/PlaceholderImage.vue";
 import Spinner from "@/components/ui/Spinner.vue";
 
 const catalogue = useCatalogue();
 
-const topCategories = computed(() => catalogue.categories.value.filter(isTopLevelCategory));
+const topCategories = computed(() => catalogue.categories.value.filter((c) => isTopLevelCategory(c) && isShownTopCategory(c)));
 
 const activeId = ref<number | null>(null);
 watch(
