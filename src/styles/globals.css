@@ -23,6 +23,7 @@
   --font-display: var(--font-display);
   --font-body: var(--font-body);
   --font-mono: var(--font-mono);
+  --font-typewriter: var(--font-typewriter);
 
   --radius-sm: var(--r-sm);
   --radius-md: var(--r-md);

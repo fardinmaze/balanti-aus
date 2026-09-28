@@ -8,15 +8,15 @@ import { brandValues, heritage } from "@/content/copy";
       <p class="font-display text-2xl font-semibold sm:text-3xl">BALANTI — Crafted for Those Who Value More</p>
       <div class="mt-6 flex flex-col items-center">
         <img src="/australian-defence-veteran.png" alt="Australian Defence Veteran Owned Business" class="h-24 w-auto" />
-        <p class="mt-3 text-sm text-ink">Business Owned by Veteran</p>
+        <p class="mt-3 font-typewriter text-md font-semibold">Veteran Owned Business</p>
       </div>
       <p class="text-muted mt-6">Balanti is a premier Australian footwear brand that brings together the elegance of Italian-inspired design with the strength and character of local craftsmanship. Established in Sydney in 2000, Balanti has built its identity around a simple philosophy: quality should be seen, felt, and experienced in every step.</p>
-      <p class="text-muted mt-3">From its beginnings in premium men’s leather footwear, Balanti developed a reputation for refined design, exceptional comfort, and dependable durability. Through its specialised manufacturing and distribution network, the brand steadily expanded its presence across the Australian market, earning the trust of customers and establishing strong relationships throughout major supply chains.</p>
+      <p class="text-muted mt-3">From its beginnings in premium leather footwear, Balanti developed a reputation for refined design, exceptional comfort, and dependable durability. Through its specialised manufacturing and distribution network, the brand steadily expanded its presence across the Australian market, earning the trust of customers and establishing strong relationships throughout major supply chains.</p>
       <p class="text-muted mt-3">Today, Balanti represents more than footwear—it represents heritage, craftsmanship, confidence, and timeless style. Its market-proven collection of full-leather footwear extends across both men’s and women’s ranges, created for people who appreciate sophisticated design without sacrificing everyday comfort and practicality.</p>
     </div>
   </section>
 
-    <section class="!py-8 sm:!py-10 max-w-[1280px] mx-auto">
+    <!-- <section class="!py-8 sm:!py-10 max-w-[1280px] mx-auto">
     <div class="container text-center">
       <p class="font-display text-2xl font-semibold sm:text-3xl mb-6">Balanti Family History</p>
       <p class="text-muted mt-3">The surname Balanti is of Italian origin, derived from the word "balante," which refers to a person who balances or a tightrope walker. This term comes from the Latin "balans," meaning "balancing." The etymology suggests a historical connection to professions or roles involving balance, agility, or performance, potentially linked to entertainers or acrobats in medieval Italy.</p>
@@ -26,7 +26,7 @@ import { brandValues, heritage } from "@/content/copy";
       <p class="text-muted mt-3">Overall, the surname Balanti encapsulates a rich cultural heritage, rooted in historical occupations and social roles that emphasize performance and agility, reflecting a unique aspect of Italian ancestry and identity.</p>
       <p class="text-muted mt-3">Similar surnames: Galanti, Balan, Galati, Galant, Lalani, Benanti, Galante, Balint, Valenti, Balent.</p>
     </div>
-  </section>
+  </section> -->
 
   <section class="!py-8 sm:!py-10 max-w-[1280px] mx-auto">
     <div class="container">

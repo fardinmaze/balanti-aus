@@ -7,7 +7,7 @@ export const footerLinks = {
   help: [
     { label: "Size Guide", href: "/support#size-guide" },
     { label: "FAQ", href: "/support#faq" },
-    { label: "Policies", href: "/support#policies" },
+    { label: "Terms and Conditions", href: "/support#policies" },
     { label: "About Us", href: "/about" },
     { label: "Contact", href: "/support#contact" },
   ]

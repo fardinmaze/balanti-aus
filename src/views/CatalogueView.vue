@@ -2,7 +2,7 @@
 import { computed, ref, watch } from "vue";
 import { useRoute, useRouter } from "vue-router";
 import { useCatalogue } from "@/lib/catalogue";
-import { isTopLevelCategory, parentCategoryQuerySlug, shownCategories } from "@/lib/category";
+import { isTopLevelCategory, parentCategoryQuerySlug, rememberBrowsedCategory, shownCategories } from "@/lib/category";
 import type { Product } from "@/types/product";
 import ProductCard from "@/components/product/ProductCard.vue";
 import FilterGroup from "@/components/catalogue/FilterGroup.vue";
@@ -147,6 +147,15 @@ function hydrateFromQuery() {
 }
 
 watch(() => route.query, hydrateFromQuery, { immediate: true });
+
+// Categories may still be loading on first visit, so re-check once they arrive.
+watch(
+  [selectedCategorySlug, catalogue.categories],
+  ([slug, categories]) => {
+    if (slug) rememberBrowsedCategory(slug, categories);
+  },
+  { immediate: true },
+);
 
 function syncQuery() {
   const query: Record<string, string> = {};

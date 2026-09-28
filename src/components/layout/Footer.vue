@@ -5,6 +5,7 @@ import { footerLinks, freeReturnsMessage } from "@/content/nav";
 import { useFreeShippingLine } from "@/lib/freeDelivery";
 import { brand } from "@/content/copy";
 import { useCatalogue } from "@/lib/catalogue";
+import { isShownTopCategory } from "@/lib/category";
 import { siteApi } from "@/api/site";
 import type { SocialLinks } from "@/api/types";
 import FacebookIcon from "@/components/ui/icons/FacebookIcon.vue";
@@ -14,6 +15,7 @@ import LinkedinIcon from "@/components/ui/icons/LinkedinIcon.vue";
 
 const year = new Date().getFullYear();
 const catalogue = useCatalogue();
+const shopCategories = computed(() => catalogue.topCategories.value.filter(isShownTopCategory));
 
 const freeShippingLine = useFreeShippingLine();
 const utilityMessage = computed(() => [freeShippingLine.value, freeReturnsMessage].filter(Boolean).join(" "));
@@ -69,7 +71,7 @@ const activeSocialLinks = computed(() => {
       <div class="flex flex-col items-center text-center">
         <p class="eyebrow mb-3">Shop</p>
         <ul class="space-y-2">
-          <li v-for="cat in catalogue.topCategories.value" :key="cat.id">
+          <li v-for="cat in shopCategories" :key="cat.id">
             <RouterLink :to="`/catalogue?category=${cat.slug}`" class="text-sm text-ink hover:opacity-70">{{ cat.name }}</RouterLink>
           </li>
         </ul>
@@ -77,7 +79,7 @@ const activeSocialLinks = computed(() => {
 
       <div class="flex flex-col items-center text-center">
         <img src="/australian-defence-veteran.png" alt="Australian Defence Veteran Owned Business" class="h-24 w-auto" />
-        <p class="mt-3 text-sm text-ink">Business Owned by Veteran</p>
+        <p class="mt-3 font-typewriter text-md font-semibold">Veteran Owned Business</p>
       </div>
     </div>
 

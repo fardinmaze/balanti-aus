@@ -56,7 +56,7 @@ const faqs = [
   <section class="!pt-8 !pb-6 sm:!pt-12 sm:!pb-8">
     <div class="container max-w-3xl text-center">
       <h1>Support</h1>
-      <p class="mt-2 text-muted">Size guide, FAQ, Policies, and how to reach us.</p>
+      <p class="mt-2 text-muted">Size Guide, FAQ, Terms and Conditions, and how to reach us.</p>
     </div>
   </section>
 
@@ -135,7 +135,7 @@ const faqs = [
 
   <section id="policies" class="!pt-0 !pb-8 sm:!pb-10">
     <div class="container max-w-3xl">
-      <h2 class="pt-1">Policies</h2>
+      <h2 class="pt-1">Terms and Conditions</h2>
       <p class="text-muted">Privacy, cookies, terms, delivery, returns and payment — the full detail behind the summaries above.</p>
       <p class="mt-1 text-xs text-muted">Last updated {{ policiesLastUpdated }}</p>
 
