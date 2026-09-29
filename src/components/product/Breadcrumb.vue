@@ -1,28 +1,16 @@
 <script setup lang="ts">
 import { computed } from "vue";
 import type { Product } from "@/types/product";
-import { useCatalogue } from "@/lib/catalogue";
-import { browsedTopCategory, isSharedCategory } from "@/lib/category";
 import ChevronIcon from "@/components/ui/icons/ChevronIcon.vue";
 
 const props = defineProps<{ product: Product }>();
-const catalogue = useCatalogue();
-
-/** A unisex product shows the men/women category the shopper came from instead; with no browsing
- *  history (e.g. a direct link) the category crumb is dropped rather than showing Unisex. */
-const categoryCrumb = computed(() => {
-  const category = props.product.category;
-  if (!category) return null;
-  if (!isSharedCategory(category)) return category;
-  const slug = browsedTopCategory.value;
-  return catalogue.categories.value.find((c) => c.isTop && c.slug === slug) ?? null;
-});
 
 /** Category → subcategory trail, each linking to the catalogue filtered on its slug (same query shape as CatalogueView). */
 const crumbs = computed(() => {
   const items: { label: string; to: string }[] = [];
-  if (categoryCrumb.value) items.push({ label: categoryCrumb.value.name, to: `/catalogue?category=${categoryCrumb.value.slug}` });
-  if (props.product.subcategory) items.push({ label: props.product.subcategory.name, to: `/catalogue?category=${props.product.subcategory.slug}` });
+  const { category, subcategory } = props.product;
+  if (category) items.push({ label: category.name, to: `/catalogue?category=${category.slug}` });
+  if (subcategory) items.push({ label: subcategory.name, to: `/catalogue?category=${subcategory.slug}` });
   return items;
 });
 </script>

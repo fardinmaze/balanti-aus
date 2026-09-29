@@ -1,4 +1,3 @@
-import { readonly, ref } from "vue";
 import type { BackendCategory } from "@/api/types";
 
 /**
@@ -37,8 +36,8 @@ export function isChildOf(category: FlatCategory, parentId: number): boolean {
 }
 
 /** Only these top-level categories are surfaced in the storefront (homepage
- *  tiles, navbar, catalogue filter); anything else the backend seeds, e.g.
- *  Unisex, stays hidden. */
+ *  tiles, navbar); anything else the backend seeds stays hidden. Unisex is
+ *  the exception in the catalogue filter — see `catalogueFilterCategories`. */
 const SHOWN_TOP_CATEGORY_SLUGS = ["men", "women"];
 
 export function isShownTopCategory(category: { slug: string }): boolean {
@@ -56,38 +55,16 @@ export function shownCategories(categories: FlatCategory[]): FlatCategory[] {
 const SHARED_CATEGORY_SLUG = "unisex";
 
 export function parentCategoryQuerySlug(slug: string): string {
-  return `${slug},${SHARED_CATEGORY_SLUG}`;
+  return slug === SHARED_CATEGORY_SLUG ? slug : `${slug},${SHARED_CATEGORY_SLUG}`;
 }
 
-/** The shown top-level category (men/women) the shopper last browsed in the catalogue. A shared-category
- *  (unisex) product has no gender of its own, so its breadcrumb borrows this instead. Mirrored to
- *  sessionStorage so a refresh on the product page keeps it. */
-const BROWSED_TOP_CATEGORY_KEY = "balanti:browsed-top-category";
-const browsedTopCategorySlug = ref<string | null>(readBrowsedTopCategory());
-
-function readBrowsedTopCategory(): string | null {
-  try {
-    return sessionStorage.getItem(BROWSED_TOP_CATEGORY_KEY);
-  } catch {
-    return null;
-  }
-}
-
-/** Records the shown top-level category behind a catalogue category slug (itself, or a subcategory's parent). */
-export function rememberBrowsedCategory(slug: string, categories: FlatCategory[]): void {
-  const category = categories.find((c) => c.slug === slug);
-  const top = category && (category.isTop ? category : categories.find((c) => c.id === category.parentId));
-  if (!top || !isShownTopCategory(top)) return;
-  browsedTopCategorySlug.value = top.slug;
-  try {
-    sessionStorage.setItem(BROWSED_TOP_CATEGORY_KEY, top.slug);
-  } catch {
-    // Storage unavailable — the in-memory ref still covers this session.
-  }
+/** The catalogue filter also lists the shared (unisex) category and its subcategories, after men/women. */
+export function catalogueFilterCategories(categories: FlatCategory[]): FlatCategory[] {
+  const sharedTop = categories.find((c) => c.isTop && isSharedCategory(c));
+  const shared = sharedTop ? categories.filter((c) => c.id === sharedTop.id || c.parentId === sharedTop.id) : [];
+  return [...shownCategories(categories), ...shared];
 }
 
 export function isSharedCategory(category: { slug: string }): boolean {
   return category.slug === SHARED_CATEGORY_SLUG;
 }
-
-export const browsedTopCategory = readonly(browsedTopCategorySlug);
