@@ -34,6 +34,47 @@ let didDrag = false;
 
 const activeImage = computed(() => props.images[props.index]);
 
+// The photo sits in a frame sized to its fitted (object-contain) box and the zoomed image is clipped to
+// that frame, so zooming/panning never spills over the backdrop. Needs the stage's content size and the
+// photo's natural size, both measured here.
+const stage = ref<HTMLElement | null>(null);
+const stageSize = ref<{ w: number; h: number } | null>(null);
+const naturalSize = ref<{ w: number; h: number } | null>(null);
+const stageObserver = new ResizeObserver(([entry]) => {
+  stageSize.value = { w: entry.contentRect.width, h: entry.contentRect.height };
+});
+watch(stage, (el, prev) => {
+  if (prev) stageObserver.unobserve(prev);
+  if (el) stageObserver.observe(el);
+});
+watch(activeImage, () => {
+  naturalSize.value = null;
+});
+
+function onImageLoad(event: Event) {
+  const img = event.target as HTMLImageElement;
+  naturalSize.value = { w: img.naturalWidth, h: img.naturalHeight };
+}
+
+/** The photo's displayed size: fit inside the stage, never upscaled past its natural size. */
+const frameSize = computed(() => {
+  if (!stageSize.value || !naturalSize.value) return null;
+  const { w, h } = naturalSize.value;
+  const fit = Math.min(1, stageSize.value.w / w, stageSize.value.h / h);
+  return { w: w * fit, h: h * fit };
+});
+
+/** Keeps the scaled photo covering its frame — panning stops at the photo's edges. */
+function clampTranslate(translate: { x: number; y: number }, scale: number) {
+  if (!frameSize.value) return translate;
+  const maxX = (frameSize.value.w * (scale - 1)) / 2;
+  const maxY = (frameSize.value.h * (scale - 1)) / 2;
+  return {
+    x: Math.min(maxX, Math.max(-maxX, translate.x)),
+    y: Math.min(maxY, Math.max(-maxY, translate.y)),
+  };
+}
+
 function resetZoom() {
   zoomScale.value = ZOOM_MIN;
   zoomTranslate.value = { x: 0, y: 0 };
@@ -49,7 +90,7 @@ function clampScale(scale: number) {
 
 function setScale(scale: number) {
   zoomScale.value = clampScale(scale);
-  if (zoomScale.value === ZOOM_MIN) zoomTranslate.value = { x: 0, y: 0 };
+  zoomTranslate.value = clampTranslate(zoomTranslate.value, zoomScale.value);
 }
 
 function zoomIn() {
@@ -87,7 +128,7 @@ function onPointerMove(event: PointerEvent) {
   const dx = event.clientX - dragStart.x;
   const dy = event.clientY - dragStart.y;
   if (Math.abs(dx) > 3 || Math.abs(dy) > 3) didDrag = true;
-  zoomTranslate.value = { x: translateStart.x + dx, y: translateStart.y + dy };
+  zoomTranslate.value = clampTranslate({ x: translateStart.x + dx, y: translateStart.y + dy }, zoomScale.value);
 }
 
 function onPointerUp() {
@@ -125,6 +166,7 @@ watch(
 );
 
 onUnmounted(() => {
+  stageObserver.disconnect();
   document.body.style.overflow = "";
   window.removeEventListener("keydown", onKeydown);
 });
@@ -175,23 +217,34 @@ onUnmounted(() => {
         </template>
 
         <div
-          class="relative flex h-full w-full max-w-4xl select-none items-center justify-center overflow-hidden p-6 sm:p-12"
-          @wheel="onWheel"
-          @pointerdown="onPointerDown"
-          @pointermove="onPointerMove"
-          @pointerup="onPointerUp"
-          @pointerleave="onPointerUp"
+          ref="stage"
+          class="relative flex h-full w-full max-w-4xl select-none items-center justify-center p-6 sm:p-12"
         >
-          <img
+          <div
             v-if="activeImage?.url"
-            :src="activeImage.url"
-            :alt="activeImage.alt"
-            class="max-h-full max-w-full touch-none object-contain transition-transform duration-100 ease-out"
-            :class="zoomScale > 1 ? (isDragging ? 'cursor-grabbing' : 'cursor-grab') : 'cursor-zoom-in'"
-            :style="{ transform: `translate(${zoomTranslate.x}px, ${zoomTranslate.y}px) scale(${zoomScale})` }"
-            draggable="false"
-            @click.stop="toggleZoomAtClick"
-          />
+            class="overflow-hidden"
+            :class="!frameSize && 'max-h-full max-w-full'"
+            :style="frameSize ? { width: `${frameSize.w}px`, height: `${frameSize.h}px` } : undefined"
+            @wheel="onWheel"
+            @pointerdown="onPointerDown"
+            @pointermove="onPointerMove"
+            @pointerup="onPointerUp"
+            @pointerleave="onPointerUp"
+          >
+            <img
+              :src="activeImage.url"
+              :alt="activeImage.alt"
+              class="block touch-none object-contain transition-transform duration-100 ease-out"
+              :class="[
+                frameSize ? 'h-full w-full' : 'max-h-full max-w-full',
+                zoomScale > 1 ? (isDragging ? 'cursor-grabbing' : 'cursor-grab') : 'cursor-zoom-in',
+              ]"
+              :style="{ transform: `translate(${zoomTranslate.x}px, ${zoomTranslate.y}px) scale(${zoomScale})` }"
+              draggable="false"
+              @load="onImageLoad"
+              @click.stop="toggleZoomAtClick"
+            />
+          </div>
         </div>
 
         <div
