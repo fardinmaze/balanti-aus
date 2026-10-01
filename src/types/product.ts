@@ -40,6 +40,8 @@ export type StockVariation = {
 export type Product = {
   id: number; // backend Product row id — the cart_items[].item_id for a matrix-variant product (§5.4)
   handle: string; // backend product slug
+  /** `Product.sku` — undefined when the API didn't return one. Display-only, not sent to the order API. */
+  sku?: string;
   name: string;
   material: string;
   colorway: string;

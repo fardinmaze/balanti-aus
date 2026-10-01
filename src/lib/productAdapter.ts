@@ -132,6 +132,7 @@ export function adaptProduct(product: BackendProduct): Product {
   return {
     id: product.id,
     handle: product.slug,
+    sku: product.sku || undefined,
     name: product.name,
     material: product.material ?? "Leather",
     colorway,

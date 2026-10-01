@@ -567,6 +567,7 @@ const fieldClass =
                     <PriceTag :amount="line.price" class="text-sm" />
                     <p class="text-sm font-semibold">{{ line.name }}</p>
                     <p class="text-sm text-muted">{{ line.colorway }}</p>
+                    <p v-if="line.sku" class="text-sm text-muted">SKU: {{ line.sku }}</p>
                     <p class="text-sm text-muted">Qty: {{ line.qty }} | Size: {{ line.size }}</p>
                   </div>
                 </li>

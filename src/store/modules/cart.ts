@@ -16,6 +16,8 @@ export type CartLine = {
   /** Matrix mechanism only (§5.1/§5.4) — null for sibling-row/no-variant lines. */
   sizeId: number | null;
   name: string;
+  /** Display-only (checkout summary) — deliberately left out of the order payload. Absent on lines saved before this field existed. */
+  sku?: string;
   price: number;
   vat: number;
   colorway: string;
@@ -92,6 +94,7 @@ export const cart: Module<CartState, RootState> = {
         colorId,
         sizeId,
         name: product.name,
+        sku: product.sku,
         price: product.onSale && product.offerPrice != null ? product.offerPrice : product.price,
         vat: product.vat,
         colorway: product.colorway,

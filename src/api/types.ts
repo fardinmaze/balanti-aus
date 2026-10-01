@@ -80,6 +80,8 @@ export type BackendProductImage = {
 export type BackendProduct = {
   id: number;
   pid: string;
+  /** Verified against a live response, e.g. `"IFL/AS/26/04"` — display-only, never sent with an order. */
+  sku?: string;
   slug: string;
   name: string;
   sell_price: number;
