@@ -16,12 +16,15 @@ export function useWishlist() {
     items: computed(() => store.getters["wishlist/items"] as Product[]),
     count: computed(() => store.getters["wishlist/count"] as number),
     isWishlisted: (handle: string) => (store.getters["wishlist/isWishlisted"] as (h: string) => boolean)(handle),
-    async toggle(product: Product) {
+    /** Color id selected when the item was saved — null if none was, or it was saved on another device. */
+    colorFor: (handle: string) => (store.getters["wishlist/colorFor"] as (h: string) => number | null)(handle),
+    /** `colorId` is remembered with the item so the wishlist shows that colorway's photo. */
+    async toggle(product: Product, colorId: number | null = null) {
       if (!store.getters["auth/isAuthenticated"]) {
         router.push({ name: "login", query: { redirect: route.fullPath } });
         return;
       }
-      await store.dispatch("wishlist/toggle", product).catch((e) => {
+      await store.dispatch("wishlist/toggle", { product, colorId }).catch((e) => {
         // A locally-stored token can still be expired/invalid server-side — the
         // client only checks presence, not validity, before this call.
         if (e instanceof ApiError && e.status === 401) {

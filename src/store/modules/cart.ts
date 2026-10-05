@@ -42,6 +42,13 @@ function loadInitialLines(): CartLine[] {
   }
 }
 
+/** First photo of the chosen color, so the line shows the colorway actually bought — undefined when that color has no photos. */
+export function colorThumbnail(product: Product, colorId: number | null | undefined): string | undefined {
+  if (colorId == null) return undefined;
+  const photo = product.colorOptions.find((c) => c.id === colorId)?.photos[0];
+  return photo?.thumbnail || photo?.image || undefined;
+}
+
 function initialState(): CartState {
   return { lines: loadInitialLines(), isOpen: false };
 }
@@ -99,7 +106,7 @@ export const cart: Module<CartState, RootState> = {
         vat: product.vat,
         colorway: product.colorway,
         tone: product.tone,
-        thumbnail: product.thumbnail,
+        thumbnail: colorThumbnail(product, colorId) ?? product.thumbnail,
       } satisfies CartLine);
       commit("setOpen", true);
     },

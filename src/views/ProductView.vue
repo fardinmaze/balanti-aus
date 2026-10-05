@@ -26,6 +26,8 @@ const notFound = ref(false);
 const loading = ref(true);
 /** Set by BuyBox to the selected matrix-mechanism color's photos (§5.1) — empty when none selected. */
 const selectedColorPhotos = ref<ColorPhoto[]>([]);
+/** Set by BuyBox — saved with the wishlist item so the wishlist shows this colorway. */
+const selectedColorId = ref<number | null>(null);
 
 async function load(handle: string) {
   loading.value = true;
@@ -114,7 +116,7 @@ const reassuranceItems = computed(() => [freeShippingLine.value, '— Australia-
             class="flex h-11 w-11 shrink-0 items-center justify-center rounded-pill border border-line"
             :aria-label="wishlist.isWishlisted(product.handle) ? 'Remove from wishlist' : 'Add to wishlist'"
             :aria-pressed="wishlist.isWishlisted(product.handle)"
-            @click="wishlist.toggle(product)"
+            @click="wishlist.toggle(product, selectedColorId)"
           >
             <HeartIcon class="h-5 w-5" :filled="wishlist.isWishlisted(product.handle)" />
           </button>
@@ -166,7 +168,7 @@ const reassuranceItems = computed(() => [freeShippingLine.value, '— Australia-
         </div>
 
         <div class="mt-6">
-          <BuyBox :product="product" @update:photos="selectedColorPhotos = $event" />
+          <BuyBox :product="product" @update:photos="selectedColorPhotos = $event" @update:color="selectedColorId = $event" />
         </div>
 
         <div class="mt-8 border-t border-line pt-7">

@@ -26,45 +26,6 @@ onMounted(() => {
   if (auth.isAuthenticated.value) address.fetchAddresses();
 });
 
-// null (not 150, or any other guessed number) until GET /site-api/free-delivery
-// actually resolves — a stale/guessed default previously made carts between the
-// old and new threshold (e.g. $200-$400 vs a real $500 limit) wrongly qualify.
-const freeShippingThreshold = computed(() => checkout.freeDelivery.value?.amount ?? null);
-const qualifiesForFreeShipping = computed(() => {
-  if (freeShippingThreshold.value === null) return false;
-  return cart.subtotal.value >= freeShippingThreshold.value || cart.subtotal.value === 0;
-});
-
-const selectedShippingId = ref<number | null>(null);
-watch(
-  () => checkout.shippingMethods.value,
-  (methods) => {
-    if (!qualifiesForFreeShipping.value && methods.length && selectedShippingId.value === null) {
-      selectedShippingId.value = methods[0].id;
-    }
-  }
-);
-
-// Guests can't load real shipping methods (GET /shipping-methods requires a
-// Customer JWT and 401s for them) — flat fallback instead of silently
-// defaulting to $0/"Free" whenever no method is available to price from.
-const STATIC_DELIVERY_FEE = 50;
-const shippingAmount = computed(() => {
-  if (qualifiesForFreeShipping.value) return 0;
-  const method = checkout.shippingMethods.value.find((m: ShippingMethod) => m.id === selectedShippingId.value);
-  return method?.amount ?? method?.price ?? STATIC_DELIVERY_FEE;
-});
-const shippingType = computed(() => (qualifiesForFreeShipping.value ? 0 : (selectedShippingId.value ?? 0)));
-
-const selectedPaymentId = ref<number | null>(null);
-watch(
-  () => checkout.paymentMethods.value,
-  (methods) => {
-    if (methods.length && selectedPaymentId.value === null) selectedPaymentId.value = methods[0].id;
-  },
-  { immediate: true }
-);
-
 const couponCode = ref("");
 const couponApplied = ref<{ type: string; value: number } | null>(null);
 const couponError = ref("");
@@ -99,6 +60,50 @@ const discountAmount = computed(() => {
       : couponApplied.value.value;
   return Math.min(amount, cart.subtotal.value);
 });
+
+// null (not 150, or any other guessed number) until GET /site-api/free-delivery
+// actually resolves — a stale/guessed default previously made carts between the
+// old and new threshold (e.g. $200-$400 vs a real $500 limit) wrongly qualify.
+const freeShippingThreshold = computed(() => checkout.freeDelivery.value?.amount ?? null);
+// Assessed on the order total after any coupon discount and before delivery
+// charges (Delivery Policy 5.2) — a coupon can push an order back under it.
+const qualifiesForFreeShipping = computed(() => {
+  if (freeShippingThreshold.value === null) return false;
+  if (cart.subtotal.value === 0) return true;
+  return cart.subtotal.value - discountAmount.value >= freeShippingThreshold.value;
+});
+
+const selectedShippingId = ref<number | null>(null);
+// Also re-runs when a coupon drops the order below the threshold, so a
+// paid method gets picked even if methods loaded while delivery was free.
+watch(
+  [() => checkout.shippingMethods.value, qualifiesForFreeShipping],
+  ([methods, isFree]) => {
+    if (!isFree && methods.length && selectedShippingId.value === null) {
+      selectedShippingId.value = methods[0].id;
+    }
+  }
+);
+
+// Guests can't load real shipping methods (GET /shipping-methods requires a
+// Customer JWT and 401s for them) — flat fallback instead of silently
+// defaulting to $0/"Free" whenever no method is available to price from.
+const STATIC_DELIVERY_FEE = 15;
+const shippingAmount = computed(() => {
+  if (qualifiesForFreeShipping.value) return 0;
+  const method = checkout.shippingMethods.value.find((m: ShippingMethod) => m.id === selectedShippingId.value);
+  return method?.amount ?? method?.price ?? STATIC_DELIVERY_FEE;
+});
+const shippingType = computed(() => (qualifiesForFreeShipping.value ? 0 : (selectedShippingId.value ?? 0)));
+
+const selectedPaymentId = ref<number | null>(null);
+watch(
+  () => checkout.paymentMethods.value,
+  (methods) => {
+    if (methods.length && selectedPaymentId.value === null) selectedPaymentId.value = methods[0].id;
+  },
+  { immediate: true }
+);
 
 // GET /site-api/vat-status → { vat, inclusive }. Inclusive: line.price already
 // carries GST, so it's just extracted for display/the order payload — nothing

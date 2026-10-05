@@ -8,7 +8,12 @@ import HeartIcon from "@/components/ui/icons/HeartIcon.vue";
 import { useWishlist } from "@/lib/wishlist";
 import { useCart } from "@/lib/cart";
 
-const props = defineProps<{ product: Product; selectedColor?: string | null }>();
+const props = defineProps<{
+  product: Product;
+  selectedColor?: string | null;
+  /** Color to open on by id (e.g. the one saved with a wishlist item) — a swatch click still wins. */
+  initialColorId?: number | null;
+}>();
 const wishlist = useWishlist();
 const cart = useCart();
 const router = useRouter();
@@ -61,6 +66,7 @@ const activeColor = computed<ColorOption | null>(() => {
   if (!props.product.colorOptions.length) return null;
   return (
     props.product.colorOptions.find((c) => c.id === selectedColorId.value) ??
+    props.product.colorOptions.find((c) => c.id === props.initialColorId) ??
     filterMatchedColor.value ??
     props.product.colorOptions.find((c) => c.photos.length > 0) ??
     props.product.colorOptions[0]
@@ -186,7 +192,7 @@ function onTouchEnd(event: TouchEvent) {
         class="absolute right-3 top-3 flex h-9 w-9 items-center justify-center rounded-pill bg-surface text-ink shadow-[var(--shadow-card)]"
         :aria-label="wishlist.isWishlisted(product.handle) ? 'Remove from wishlist' : 'Add to wishlist'"
         :aria-pressed="wishlist.isWishlisted(product.handle)"
-        @click.stop.prevent="wishlist.toggle(product)"
+        @click.stop.prevent="wishlist.toggle(product, activeColor?.id ?? null)"
       >
         <HeartIcon class="h-4 w-4" :filled="wishlist.isWishlisted(product.handle)" />
       </button>

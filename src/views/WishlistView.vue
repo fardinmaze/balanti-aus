@@ -16,7 +16,12 @@ const wishlist = useWishlist();
       </p>
 
       <div v-else class="grid grid-cols-2 items-start gap-6 sm:grid-cols-3 lg:grid-cols-4">
-        <ProductCard v-for="product in wishlist.items.value" :key="product.handle" :product="product" />
+        <ProductCard
+          v-for="product in wishlist.items.value"
+          :key="product.handle"
+          :product="product"
+          :initial-color-id="wishlist.colorFor(product.handle)"
+        />
       </div>
     </div>
   </section>

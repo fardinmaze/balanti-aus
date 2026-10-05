@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { computed, onMounted, ref } from "vue";
-import { policies, policiesLastUpdated } from "@/content/policies";
+import { policies, policiesLastUpdated, policiesVersion } from "@/content/policies";
+import { faqSections } from "@/content/faqs";
 import { settingsApi } from "@/api/settings";
 import type { ShopContactInfo } from "@/api/types";
 
@@ -36,20 +37,6 @@ const recommendedSize = computed(() => {
   );
 });
 
-const faqs = [
-  {
-    q: "What's the difference between the Oxford and the Loafer?",
-    a: "The Oxford is a closed-lace formal shoe built for the office. The Loafer is slip-on, lower break-in, and moves between smart-casual and business without changing character. Both share the same full-grain leather and resoleable construction.",
-  },
-  {
-    q: "How should I break these in?",
-    a: "Full-grain leather softens with wear. Start with a few short wears around the house or a half-day at the desk before a full day on your feet.",
-  },
-  {
-    q: "Can I get these resoled?",
-    a: "Yes — both styles use a resoleable construction, so a worn sole doesn't mean a new pair.",
-  },
-];
 </script>
 
 <template>
@@ -124,11 +111,14 @@ const faqs = [
   <section id="faq" class="!pt-0 !pb-8 sm:!pb-10">
     <div class="container max-w-3xl">
       <h2 class="pt-6">FAQ</h2>
-      <div class="divide-y divide-line border-t border-line">
-        <details v-for="faq in faqs" :key="faq.q" class="py-4">
-          <summary class="cursor-pointer text-sm font-semibold">{{ faq.q }}</summary>
-          <p class="mt-2 text-sm text-muted">{{ faq.a }}</p>
-        </details>
+      <div v-for="section in faqSections" :key="section.id" :id="section.id" class="mt-6">
+        <h3 class="mb-2 text-base font-semibold">{{ section.title }}</h3>
+        <div class="divide-y divide-line border-t border-line">
+          <details v-for="faq in section.faqs" :key="faq.q" class="py-4">
+            <summary class="cursor-pointer text-sm font-semibold">{{ faq.q }}</summary>
+            <p v-for="(paragraph, i) in faq.a" :key="i" class="mt-2 text-sm text-muted">{{ paragraph }}</p>
+          </details>
+        </div>
       </div>
     </div>
   </section>
@@ -137,12 +127,7 @@ const faqs = [
     <div class="container max-w-3xl">
       <h2 class="pt-1">Terms and Conditions</h2>
       <p class="text-muted">Privacy, cookies, terms, delivery, returns and payment — the full detail behind the summaries above.</p>
-      <p class="mt-1 text-xs text-muted">Last updated {{ policiesLastUpdated }}</p>
-
-      <div class="mt-4 rounded-md border border-line bg-surface p-4 text-sm text-muted">
-        This policy set is a working draft: business details such as our registered entity, ABN, postal address,
-        phone number and business hours are still bracketed placeholders below and are not yet finalised.
-      </div>
+      <p class="mt-1 text-xs text-muted">Last updated {{ policiesLastUpdated }} · Version {{ policiesVersion }}</p>
 
       <div class="mt-8 divide-y divide-line border-t border-line">
         <details v-for="policy in policies" :key="policy.id" :id="policy.id" class="py-6">
@@ -157,9 +142,17 @@ const faqs = [
               <p v-for="(paragraph, i) in block.paragraphs" :key="i" class="mt-2 text-sm text-muted">
                 {{ paragraph }}
               </p>
-              <ul v-if="block.list" class="mt-2 list-disc space-y-1.5 pl-5 text-sm text-muted">
+              <component
+                :is="block.ordered ? 'ol' : 'ul'"
+                v-if="block.list"
+                class="mt-2 space-y-1.5 pl-5 text-sm text-muted"
+                :class="block.ordered ? 'list-decimal' : 'list-disc'"
+              >
                 <li v-for="(item, i) in block.list" :key="i">{{ item }}</li>
-              </ul>
+              </component>
+              <p v-for="(paragraph, i) in block.after" :key="`after-${i}`" class="mt-2 text-sm text-muted">
+                {{ paragraph }}
+              </p>
             </div>
           </div>
         </details>

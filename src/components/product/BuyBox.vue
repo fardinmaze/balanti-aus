@@ -7,7 +7,10 @@ import BaseButton from "@/components/ui/BaseButton.vue";
 import ShoeIcon from "@/components/ui/icons/ShoeIcon.vue";
 
 const props = defineProps<{ product: Product }>();
-const emit = defineEmits<{ (e: "update:photos", photos: ColorPhoto[]): void }>();
+const emit = defineEmits<{
+  (e: "update:photos", photos: ColorPhoto[]): void;
+  (e: "update:color", colorId: number | null): void;
+}>();
 
 const cart = useCart();
 const route = useRoute();
@@ -41,10 +44,12 @@ function applyDefaultColor() {
   if (!first) {
     selectedColorId.value = null;
     emit("update:photos", []);
+    emit("update:color", null);
     return;
   }
   selectedColorId.value = first.id;
   emit("update:photos", first.photos);
+  emit("update:color", first.id);
 }
 
 watch(
@@ -84,6 +89,7 @@ function selectColor(colorId: number) {
   selectedColorId.value = colorId;
   showSelectionError.value = false;
   emit("update:photos", props.product.colorOptions.find((c) => c.id === colorId)?.photos ?? []);
+  emit("update:color", colorId);
   if (requireSize.value && selectedSizeId.value != null) {
     const qty = matrixQuantity(colorId, selectedSizeId.value);
     if (qty !== null && qty <= 0) selectedSizeId.value = null;
