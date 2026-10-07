@@ -13,18 +13,18 @@ onMounted(async () => {
 });
 
 const sizeChart = [
-  { mm: 245, cm: 24.5, auUk: "6", us: "7", eu: "39", fit: "True to size" },
-  { mm: 250, cm: 25.0, auUk: "6.5", us: "7.5", eu: "40", fit: "True to size" },
-  { mm: 255, cm: 25.5, auUk: "7", us: "8", eu: "40–41", fit: "True to size" },
-  { mm: 260, cm: 26.0, auUk: "7.5", us: "8.5", eu: "41", fit: "True to size" },
-  { mm: 265, cm: 26.5, auUk: "8", us: "9", eu: "42", fit: "True to size" },
-  { mm: 270, cm: 27.0, auUk: "8.5", us: "9.5", eu: "42–43", fit: "True to size" },
-  { mm: 275, cm: 27.5, auUk: "9", us: "10", eu: "43", fit: "True to size" },
-  { mm: 280, cm: 28.0, auUk: "9.5", us: "10.5", eu: "44", fit: "True to size" },
-  { mm: 285, cm: 28.5, auUk: "10.5", us: "11.5", eu: "45", fit: "Best for wider feet" },
-  { mm: 290, cm: 29.0, auUk: "11", us: "12", eu: "46", fit: "True to size" },
-  { mm: 295, cm: 29.5, auUk: "11.5", us: "12.5", eu: "47", fit: "Best for wider feet" },
-  { mm: 300, cm: 30.0, auUk: "12", us: "13", eu: "48", fit: "True to size" },
+  { mm: 245, cm: 24.5, au: "38", uk: "6", us: "7", eu: "39", fit: "True to size" },
+  { mm: 250, cm: 25.0, au: "38.5", uk: "6.5", us: "7.5", eu: "40", fit: "True to size" },
+  { mm: 255, cm: 25.5, au: "39", uk: "7", us: "8", eu: "40–41", fit: "True to size" },
+  { mm: 260, cm: 26.0, au: "39.5", uk: "7.5", us: "8.5", eu: "41", fit: "True to size" },
+  { mm: 265, cm: 26.5, au: "40", uk: "8", us: "9", eu: "42", fit: "True to size" },
+  { mm: 270, cm: 27.0, au: "40.5", uk: "8.5", us: "9.5", eu: "42–43", fit: "True to size" },
+  { mm: 275, cm: 27.5, au: "41", uk: "9", us: "10", eu: "43", fit: "True to size" },
+  { mm: 280, cm: 28.0, au: "41.5", uk: "9.5", us: "10.5", eu: "44", fit: "True to size" },
+  { mm: 285, cm: 28.5, au: "42.5", uk: "10.5", us: "11.5", eu: "45", fit: "Best for wider feet" },
+  { mm: 290, cm: 29.0, au: "43", uk: "11", us: "12", eu: "46", fit: "True to size" },
+  { mm: 295, cm: 29.5, au: "43.5", uk: "11.5", us: "12.5", eu: "47", fit: "Best for wider feet" },
+  { mm: 300, cm: 30.0, au: "44", uk: "12", us: "13", eu: "48", fit: "True to size" },
 ];
 
 const footLengthCm = ref<number | null>(null);
@@ -70,20 +70,21 @@ const recommendedSize = computed(() => {
 
         <div v-if="recommendedSize" class="mt-4 max-w-xs rounded-lg border border-line bg-surface p-5">
           <p class="text-xs text-muted">{{ recommendedSize.mm }} mm ({{ recommendedSize.cm.toFixed(1) }} cm)</p>
-          <p class="mt-1 font-display text-2xl font-semibold">AU/UK {{ recommendedSize.auUk }}</p>
+          <p class="mt-1 font-display text-2xl font-semibold">AU {{ recommendedSize.au }}</p>
           <p class="mt-1 text-sm text-muted">
-            US {{ recommendedSize.us }} · EU {{ recommendedSize.eu }}
+            UK {{ recommendedSize.uk }} · US {{ recommendedSize.us }} · EU {{ recommendedSize.eu }}
           </p>
           <p class="mt-3 text-sm font-semibold">{{ recommendedSize.fit }}</p>
         </div>
       </div>
 
       <div class="overflow-x-auto">
-        <table class="w-full min-w-[640px] border-collapse text-left text-sm">
+        <table class="w-full min-w-[720px] border-collapse text-left text-sm">
           <thead>
             <tr class="border-b border-line">
               <th class="py-2 pr-4 font-semibold">Foot length</th>
-              <th class="py-2 pr-4 font-semibold">AU / UK</th>
+              <th class="py-2 pr-4 font-semibold">AU</th>
+              <th class="py-2 pr-4 font-semibold">UK</th>
               <th class="py-2 pr-4 font-semibold">US Men's</th>
               <th class="py-2 pr-4 font-semibold">EU</th>
               <th class="py-2 font-semibold">Fit note</th>
@@ -92,12 +93,13 @@ const recommendedSize = computed(() => {
           <tbody>
             <tr
               v-for="row in sizeChart"
-              :key="row.auUk"
+              :key="row.au"
               class="border-b border-line"
-              :class="{ 'bg-surface': recommendedSize?.auUk === row.auUk }"
+              :class="{ 'bg-surface': recommendedSize?.au === row.au }"
             >
               <td class="py-2 pr-4 whitespace-nowrap">{{ row.mm }} mm ({{ row.cm.toFixed(1) }} cm)</td>
-              <td class="py-2 pr-4">{{ row.auUk }}</td>
+              <td class="py-2 pr-4">{{ row.au }}</td>
+              <td class="py-2 pr-4">{{ row.uk }}</td>
               <td class="py-2 pr-4">{{ row.us }}</td>
               <td class="py-2 pr-4">{{ row.eu }}</td>
               <td class="py-2">{{ row.fit }}</td>
@@ -168,10 +170,10 @@ const recommendedSize = computed(() => {
         <a :href="`mailto:${contactInfo?.email_address ?? FALLBACK_EMAIL}`" class="font-semibold">{{
           contactInfo?.email_address ?? FALLBACK_EMAIL
         }}</a>
-        <template v-if="contactInfo?.phone_number">
+        <!-- <template v-if="contactInfo?.phone_number">
           or call
           <a :href="`tel:${contactInfo.phone_number}`" class="font-semibold">{{ contactInfo.phone_number }}</a>
-        </template>
+        </template> -->
         and we'll get back to you within one business day.
       </p>
     </div>

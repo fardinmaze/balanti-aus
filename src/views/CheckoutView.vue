@@ -531,11 +531,13 @@ const fieldClass =
                 <span>Discount</span>
                 <span>-<PriceTag :amount="discountAmount" /></span>
               </div>
+              
               <div class="flex justify-between">
                 <span>Delivery</span>
                 <span v-if="shippingAmount === 0">Free</span>
                 <PriceTag v-else :amount="shippingAmount" />
               </div>
+              
               <div v-if="!vatInclusive" class="flex justify-between">
                 <span>GST</span>
                 <PriceTag :amount="gstIncluded" />

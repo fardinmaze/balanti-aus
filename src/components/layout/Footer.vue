@@ -10,8 +10,7 @@ import { siteApi } from "@/api/site";
 import type { SocialLinks } from "@/api/types";
 import FacebookIcon from "@/components/ui/icons/FacebookIcon.vue";
 import InstagramIcon from "@/components/ui/icons/InstagramIcon.vue";
-import TwitterIcon from "@/components/ui/icons/TwitterIcon.vue";
-import LinkedinIcon from "@/components/ui/icons/LinkedinIcon.vue";
+import TiktokIcon from "@/components/ui/icons/TiktokIcon.vue";
 
 const year = new Date().getFullYear();
 const catalogue = useCatalogue();
@@ -25,13 +24,18 @@ onMounted(async () => {
   socialLinks.value = (await siteApi.socialLinks().catch(() => null)) ?? null;
 });
 
-const socialIcons = { facebook: FacebookIcon, twitter: TwitterIcon, instagram: InstagramIcon, linkedin: LinkedinIcon };
+// The backend's `twitter` field holds the TikTok URL; `linkedin` is unused.
+const socialPlatforms: { key: keyof SocialLinks; label: string; icon: typeof FacebookIcon }[] = [
+  { key: "facebook", label: "Facebook", icon: FacebookIcon },
+  { key: "twitter", label: "TikTok", icon: TiktokIcon },
+  { key: "instagram", label: "Instagram", icon: InstagramIcon },
+];
 const activeSocialLinks = computed(() => {
   const links = socialLinks.value;
   if (!links) return [];
-  return (Object.keys(socialIcons) as (keyof SocialLinks)[])
-    .filter((platform) => links[platform])
-    .map((platform) => ({ platform, url: links[platform] as string, icon: socialIcons[platform] }));
+  return socialPlatforms
+    .filter((platform) => links[platform.key])
+    .map((platform) => ({ platform: platform.label, url: links[platform.key] as string, icon: platform.icon }));
 });
 </script>
 
@@ -60,7 +64,7 @@ const activeSocialLinks = computed(() => {
       </div>
 
       <div class="flex flex-col items-center text-center">
-        <p class="eyebrow mb-3">Help</p>
+        <!-- <p class="eyebrow mb-3">Help</p> -->
         <ul class="space-y-2">
           <li v-for="link in footerLinks.help" :key="link.href">
             <RouterLink :to="link.href" class="text-sm text-ink hover:opacity-70">{{ link.label }}</RouterLink>
