@@ -17,6 +17,7 @@
   --accent-contrast: #FFFFFF;  /* text/icons on accent */
   --sale: #B4462F;             /* price drops / urgency only */
   --success: #2E6B4F;          /* in-stock, confirmations */
+  --wishlist: #7B0323;         /* filled wishlist heart */
   --focus: #2563EB;            /* keyboard focus ring */
 
   /* ---- Typography ---- */

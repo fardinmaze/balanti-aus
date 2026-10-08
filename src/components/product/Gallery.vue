@@ -45,11 +45,16 @@ const thumbnails = computed<Thumb[]>(() => {
 
 const activeKey = ref<string>(thumbnails.value[0]?.key ?? "front");
 
+/** Hero swap animation: slide with the browsing direction, crossfade on a color/product change. */
+type HeroTransition = "gallery-next" | "gallery-prev" | "card-img";
+const heroTransition = ref<HeroTransition>("card-img");
+
 // Default to the first photo whenever the displayed photo set changes —
 // product change, or a different color picked in BuyBox.
 watch(
   () => [props.product.handle, props.activePhotos],
   () => {
+    heroTransition.value = "card-img";
     activeKey.value = thumbnails.value[0]?.key ?? "front";
   },
   { immediate: true }
@@ -57,11 +62,19 @@ watch(
 
 const activeIndex = computed(() => thumbnails.value.findIndex((t) => t.key === activeKey.value));
 
+function showIndex(nextIndex: number, direction?: 1 | -1) {
+  const key = thumbnails.value[nextIndex]?.key;
+  if (!key || key === activeKey.value) return;
+  const dir = direction ?? (nextIndex > activeIndex.value ? 1 : -1);
+  heroTransition.value = dir > 0 ? "gallery-next" : "gallery-prev";
+  activeKey.value = key;
+}
+
 function goToOffset(offset: number) {
   const count = thumbnails.value.length;
   if (count < 2) return;
-  const nextIndex = (activeIndex.value + offset + count) % count;
-  activeKey.value = thumbnails.value[nextIndex].key;
+  // Wrapping past the end still reads as "next" (and vice versa).
+  showIndex((activeIndex.value + offset + count) % count, offset > 0 ? 1 : -1);
 }
 
 const activeThumb = computed(() => thumbnails.value.find((t) => t.key === activeKey.value) ?? thumbnails.value[0]);
@@ -82,15 +95,14 @@ function openZoom() {
 }
 
 function onZoomIndexChange(nextIndex: number) {
-  const key = thumbnails.value[nextIndex]?.key;
-  if (key) activeKey.value = key;
+  showIndex(nextIndex);
 }
 </script>
 
 <template>
   <div class="flex flex-col gap-3">
     <div class="flex flex-col gap-3 sm:flex-row sm:items-start">
-      <div class="relative aspect-square min-w-0 shrink w-[min(100%,calc(100vh-180px))] lg:w-[min(640px,calc(100vh-180px))] xl:w-[min(840px,calc(100vh-180px))]">
+      <div data-fly-source class="relative aspect-square min-w-0 shrink w-[min(100%,calc(100vh-180px))] lg:w-[min(640px,calc(100vh-180px))] xl:w-[min(840px,calc(100vh-180px))]">
         <button
           v-if="heroImage"
           type="button"
@@ -98,14 +110,17 @@ function onZoomIndexChange(nextIndex: number) {
           aria-label="Open full-size image viewer"
           @click="openZoom"
         >
-          <img
-            :src="heroImage"
-            :alt="heroAlt"
-            loading="eager"
-            decoding="async"
-            fetchpriority="high"
-            class="h-full w-full object-cover transition-transform duration-[var(--dur-mid)] ease-[var(--ease)] group-hover:scale-[1.03]"
-          />
+          <Transition :name="heroTransition">
+            <img
+              :key="heroImage"
+              :src="heroImage"
+              :alt="heroAlt"
+              loading="eager"
+              decoding="async"
+              fetchpriority="high"
+              class="absolute inset-0 h-full w-full object-cover transition-transform duration-[var(--dur-mid)] ease-[var(--ease)] group-hover:scale-[1.03]"
+            />
+          </Transition>
         </button>
         <PlaceholderImage v-else :tone="product.tone" :label="product.name" :angle="heroAngle" class="h-full w-full rounded-lg" />
 
@@ -142,9 +157,9 @@ function onZoomIndexChange(nextIndex: number) {
           type="button"
           :aria-pressed="activeKey === thumb.key"
           :aria-label="`Show ${thumb.label}`"
-          class="h-20 w-20 sm:h-24 sm:w-24 shrink-0 overflow-hidden rounded-md border transition-opacity md:h-32 md:w-32"
+          class="h-20 w-20 sm:h-24 sm:w-24 shrink-0 overflow-hidden rounded-md border transition-[opacity,border-color] duration-[var(--dur-mid)] ease-[var(--ease)] md:h-32 md:w-32"
           :class="activeKey === thumb.key ? 'border-ink' : 'border-line opacity-70 hover:opacity-100'"
-          @click="activeKey = thumb.key"
+          @click="showIndex(thumbnails.indexOf(thumb))"
         >
           <img
             v-if="thumb.url"

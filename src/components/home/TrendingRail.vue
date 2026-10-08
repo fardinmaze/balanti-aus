@@ -70,7 +70,7 @@ function onTouchEnd(e: TouchEvent) {
 </script>
 
 <template>
-  <section v-if="loading || trending.length">
+  <section v-if="loading || trending.length" v-reveal>
     <div class="container">
       <div class="flex flex-col sm:flex-row sm:items-end sm:justify-between sm:gap-4">
         <div>

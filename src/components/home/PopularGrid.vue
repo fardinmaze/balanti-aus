@@ -30,7 +30,7 @@ const items = computed(() => popular.value.slice(0, 10));
       <div v-if="loading" class="mt-8 grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5">
         <ProductCardSkeleton v-for="i in 10" :key="i" />
       </div>
-      <div v-else class="mt-8 grid grid-cols-2 items-start gap-2 sm:gap-6 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5">
+      <div v-else v-reveal.children class="mt-8 grid grid-cols-2 items-start gap-2 sm:gap-6 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5">
         <ProductCard v-for="product in items" :key="product.handle" :product="product" />
       </div>
     </div>

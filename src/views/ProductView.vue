@@ -5,6 +5,8 @@ import { useCatalogue } from "@/lib/catalogue";
 import { reassurance } from "@/content/copy";
 import { useFreeShippingLine } from "@/lib/freeDelivery";
 import { useWishlist } from "@/lib/wishlist";
+import { useAuth } from "@/lib/auth";
+import { flyTo, pop } from "@/lib/flyTo";
 import type { ColorPhoto, Product } from "@/types/product";
 import Gallery from "@/components/product/Gallery.vue";
 import ImageZoomViewer from "@/components/product/ImageZoomViewer.vue";
@@ -20,6 +22,18 @@ import ProductTabs from "@/components/product/ProductTabs.vue";
 const route = useRoute();
 const catalogue = useCatalogue();
 const wishlist = useWishlist();
+const auth = useAuth();
+
+function toggleWishlist(e: MouseEvent) {
+  const p = product.value;
+  if (!p) return;
+  // Only celebrate adds — removing, or bouncing a guest to login, gets no flight.
+  if (auth.isAuthenticated.value && !wishlist.isWishlisted(p.handle)) {
+    pop(e.currentTarget as Element);
+    flyTo([document.querySelector("[data-fly-source]"), e.currentTarget as Element], "wishlist");
+  }
+  wishlist.toggle(p, selectedColorId.value);
+}
 
 const product = ref<Product | undefined>(undefined);
 const notFound = ref(false);
@@ -116,7 +130,7 @@ const reassuranceItems = computed(() => [freeShippingLine.value, '— Australia-
             class="flex h-11 w-11 shrink-0 items-center justify-center rounded-pill border border-line"
             :aria-label="wishlist.isWishlisted(product.handle) ? 'Remove from wishlist' : 'Add to wishlist'"
             :aria-pressed="wishlist.isWishlisted(product.handle)"
-            @click="wishlist.toggle(product, selectedColorId)"
+            @click="toggleWishlist"
           >
             <HeartIcon class="h-5 w-5" :filled="wishlist.isWishlisted(product.handle)" />
           </button>

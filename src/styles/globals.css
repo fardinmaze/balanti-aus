@@ -18,6 +18,7 @@
   --color-accent-contrast: var(--accent-contrast);
   --color-sale: var(--sale);
   --color-success: var(--success);
+  --color-wishlist: var(--wishlist);
   --color-focus: var(--focus);
 
   --font-display: var(--font-display);
@@ -29,6 +30,76 @@
   --radius-md: var(--r-md);
   --radius-lg: var(--r-lg);
   --radius-pill: var(--r-pill);
+}
+
+/* Tailwind v4's preflight resets buttons to `cursor: default`; restore the
+   pointer on everything clickable (wishlist hearts, colour/size swatches,
+   tabs, chips…). In @layer base so cursor-* utilities still win. */
+@layer base {
+  button:not(:disabled),
+  [role="button"]:not([aria-disabled="true"]),
+  [type="button"]:not(:disabled),
+  [type="submit"]:not(:disabled),
+  [type="reset"]:not(:disabled),
+  label:has(> input[type="radio"]:not(:disabled)),
+  label:has(> input[type="checkbox"]:not(:disabled)),
+  input[type="radio"]:not(:disabled),
+  input[type="checkbox"]:not(:disabled),
+  select:not(:disabled),
+  summary {
+    cursor: pointer;
+  }
+
+  :disabled,
+  [aria-disabled="true"] {
+    cursor: not-allowed;
+  }
+}
+
+/* Product card image swaps (<Transition name="card-img">): crossfade. Both
+   images are absolutely positioned, so old and new overlap while fading. The
+   transform transition is kept so the hover zoom still eases. */
+.card-img-enter-active,
+.card-img-leave-active {
+  transition: opacity var(--dur-reveal) var(--ease), transform var(--dur-mid) var(--ease);
+}
+.card-img-enter-from,
+.card-img-leave-to {
+  opacity: 0;
+}
+
+/* PDP hero photo (<Transition name="gallery-next|gallery-prev">): slides with
+   the browsing direction while crossfading; the old and new photo overlap. */
+.gallery-next-enter-active,
+.gallery-next-leave-active,
+.gallery-prev-enter-active,
+.gallery-prev-leave-active {
+  transition: opacity var(--dur-reveal) var(--ease), transform var(--dur-reveal) var(--ease);
+}
+.gallery-next-enter-from,
+.gallery-prev-leave-to {
+  opacity: 0;
+  transform: translateX(8%);
+}
+.gallery-next-leave-to,
+.gallery-prev-enter-from {
+  opacity: 0;
+  transform: translateX(-8%);
+}
+
+/* Tab panels / inline forms (<Transition name="panel-fade">): rise in, quick fade out. */
+.panel-fade-enter-active {
+  transition: opacity var(--dur-mid) var(--ease), transform var(--dur-mid) var(--ease);
+}
+.panel-fade-leave-active {
+  transition: opacity var(--dur-fast) var(--ease);
+}
+.panel-fade-enter-from {
+  opacity: 0;
+  transform: translateY(var(--space-2));
+}
+.panel-fade-leave-to {
+  opacity: 0;
 }
 
 html,

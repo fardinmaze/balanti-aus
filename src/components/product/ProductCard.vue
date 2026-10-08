@@ -7,6 +7,8 @@ import PriceTag from "@/components/ui/Price.vue";
 import HeartIcon from "@/components/ui/icons/HeartIcon.vue";
 import { useWishlist } from "@/lib/wishlist";
 import { useCart } from "@/lib/cart";
+import { useAuth } from "@/lib/auth";
+import { flyTo, pop } from "@/lib/flyTo";
 
 const props = defineProps<{
   product: Product;
@@ -17,6 +19,17 @@ const props = defineProps<{
 const wishlist = useWishlist();
 const cart = useCart();
 const router = useRouter();
+const auth = useAuth();
+const mediaEl = ref<HTMLElement | null>(null);
+
+function toggleWishlist(e: MouseEvent) {
+  // Only celebrate adds — removing, or bouncing a guest to login, gets no flight.
+  if (auth.isAuthenticated.value && !wishlist.isWishlisted(props.product.handle)) {
+    pop(e.currentTarget as Element);
+    flyTo(mediaEl.value, "wishlist");
+  }
+  wishlist.toggle(props.product, activeColor.value?.id ?? null);
+}
 
 // Matrix-mechanism products (§5.1) need a color/size picked on the PDP — there's no
 // single unambiguous "first in stock size" to quick-add, unlike sibling-row products.
@@ -30,6 +43,7 @@ function quickAdd() {
   }
   if (!firstInStockSize.value) return;
   cart.addItem(props.product, firstInStockSize.value);
+  flyTo(mediaEl.value, "cart");
 }
 
 // Color-wise thumbnail switching + per-color image slider (mirrors the PDP
@@ -122,16 +136,19 @@ function onTouchEnd(event: TouchEvent) {
 <template>
   <RouterLink :to="productLink" class="group block">
     <div
+      ref="mediaEl"
       class="relative aspect-[3/3] overflow-hidden rounded-none touch-pan-y"
       @touchstart="onTouchStart"
       @touchend="onTouchEnd"
     >
-      <img
-        v-if="cardImage"
-        :src="cardImage"
-        :alt="`${product.name} — ${activeColor?.name ?? product.colorway}`"
-        class="absolute inset-0 h-full w-full object-cover transition-transform duration-[var(--dur-mid)] ease-[var(--ease)] group-hover:scale-105"
-      />
+      <Transition v-if="cardImage" name="card-img">
+        <img
+          :key="cardImage"
+          :src="cardImage"
+          :alt="`${product.name} — ${activeColor?.name ?? product.colorway}`"
+          class="absolute inset-0 h-full w-full object-cover transition-transform duration-[var(--dur-mid)] ease-[var(--ease)] group-hover:scale-105"
+        />
+      </Transition>
       <template v-else>
         <PlaceholderImage
           :tone="product.tone"
@@ -192,7 +209,7 @@ function onTouchEnd(event: TouchEvent) {
         class="absolute right-3 top-3 flex h-9 w-9 items-center justify-center rounded-pill bg-surface text-ink shadow-[var(--shadow-card)]"
         :aria-label="wishlist.isWishlisted(product.handle) ? 'Remove from wishlist' : 'Add to wishlist'"
         :aria-pressed="wishlist.isWishlisted(product.handle)"
-        @click.stop.prevent="wishlist.toggle(product, activeColor?.id ?? null)"
+        @click.stop.prevent="toggleWishlist"
       >
         <HeartIcon class="h-4 w-4" :filled="wishlist.isWishlisted(product.handle)" />
       </button>

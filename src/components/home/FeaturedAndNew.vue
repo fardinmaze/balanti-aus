@@ -44,7 +44,7 @@ const isLoading = computed(() =>
 </script>
 
 <template>
-  <section>
+  <section v-reveal>
     <div class="container">
       <div class="flex gap-8 border-b border-line" role="tablist">
         <button

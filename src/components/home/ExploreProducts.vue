@@ -28,7 +28,7 @@ const subcategories = computed(() =>
 
 <template>
   <Spinner v-if="catalogue.loading.value && !topCategories.length" label="Loading categories…" />
-  <section v-else-if="topCategories.length">
+  <section v-else-if="topCategories.length" v-reveal>
     <h2 class="container text-center">Explore Our Products</h2>
 
     <div class="container mt-4 flex justify-center gap-8 overflow-x-auto" role="tablist">

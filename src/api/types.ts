@@ -195,20 +195,49 @@ export type ProductReview = {
   customer_name?: string;
 };
 
+/** `/returns/my-requests` entry. */
 export type ReturnRequest = {
   id: number;
-  so_product_id: number;
+  product_name: string;
+  so_id: string;
   reason: string;
   status: "REQUESTED" | "APPROVED" | "REJECTED" | "RECEIVED" | "REFUNDED";
-  created_at?: string;
+  requested_at: string;
+  resolved_at: string | null;
+  so_product: number;
+  customer: number;
 };
 
+export type OrderedItem = {
+  id: number;
+  item_name: string;
+  item_description: string | null;
+  quantity: number;
+  rate: number;
+  vat_percentage: number;
+  vat_total: number;
+  amount: number;
+  product: number;
+  color: number | null;
+  size: number | null;
+  image?: string | null;
+  thumbnail?: string | null;
+  [extra: string]: unknown;
+};
+
+/** `/site-api/my-orders` entry. */
 export type OrderSummary = {
   so_id?: string;
   order_id?: string;
+  reference?: string | null;
   so_date?: string;
-  total?: number;
+  expected_delivery?: string | null;
   status?: string;
+  total_amount?: number;
+  so_note?: string;
+  delivery_note?: string;
+  received?: boolean;
+  ordered_items?: OrderedItem[];
   [extra: string]: unknown;
 };
 

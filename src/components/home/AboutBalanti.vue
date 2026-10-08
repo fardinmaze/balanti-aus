@@ -1,7 +1,7 @@
 <script setup lang="ts"></script>
 
 <template>
-  <section class="relative !p-0">
+  <section class="relative !p-0" v-reveal>
     <div class="relative w-full overflow-hidden">
       <img src="/section.png" alt="" aria-hidden="true" class="h-[95vh] w-full object-cover sm:h-auto" />
       <div class="absolute inset-0 bg-black/45" aria-hidden="true" />

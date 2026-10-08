@@ -17,7 +17,7 @@ const categories = computed(() => catalogue.topCategories.value.filter(isShownTo
 
 <template>
   <Spinner v-if="catalogue.loading.value && !categories.length" label="Loading categories…" />
-  <section v-else-if="categories.length">
+  <section v-else-if="categories.length" v-reveal>
     <!-- <h2 class="container">Shop by Category</h2> -->
     <div class="grid grid-cols-1 sm:grid-cols-2">
       <RouterLink

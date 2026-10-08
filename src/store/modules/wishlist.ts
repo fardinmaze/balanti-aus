@@ -99,7 +99,9 @@ export const wishlist: Module<WishlistState, RootState> = {
     },
   },
   getters: {
-    items: (state) => state.items,
+    /** Resolved through the catalogue cache so a fuller copy (color options,
+     *  per-color photos) replaces the light wishlist payload as soon as it loads. */
+    items: (state, _getters, rootState) => state.items.map((p) => rootState.catalogue.byHandle[p.handle] ?? p),
     isWishlisted: (state) => (handle: string) => state.items.some((p) => p.handle === handle),
     colorFor: (state) => (handle: string) => state.colors[handle] ?? null,
     count: (state) => state.items.length,

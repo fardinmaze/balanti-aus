@@ -41,7 +41,7 @@ const activeSocialLinks = computed(() => {
 
 <template>
   <footer class="border-t border-line bg-surface">
-    <div class="container grid items-start gap-10 py-20 sm:grid-cols-2 lg:grid-cols-4">
+    <div v-reveal.children class="container grid items-start gap-10 py-20 sm:grid-cols-2 lg:grid-cols-4">
       <div class="flex flex-col items-center text-center">
         <RouterLink to="/" class="inline-flex items-center">
           <img src="/balanti-logo-11.png" :alt="brand.name" class="h-14 lg:h-16 w-auto" />

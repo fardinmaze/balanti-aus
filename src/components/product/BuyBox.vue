@@ -3,6 +3,7 @@ import { ref, computed, watch } from "vue";
 import { useRoute, useRouter } from "vue-router";
 import type { ColorPhoto, Product } from "@/types/product";
 import { useCart } from "@/lib/cart";
+import { flyTo } from "@/lib/flyTo";
 import BaseButton from "@/components/ui/BaseButton.vue";
 import ShoeIcon from "@/components/ui/icons/ShoeIcon.vue";
 
@@ -142,13 +143,15 @@ function addSelectionToCart() {
   }
 }
 
-function addToBag() {
+function addToBag(e?: MouseEvent) {
   if (productOutOfStock.value) return;
   if (!canAdd.value) {
     showSelectionError.value = true;
     return;
   }
   addSelectionToCart();
+  // Fly from the gallery photo if it's on screen, else from the button itself.
+  flyTo([document.querySelector("[data-fly-source]"), e?.currentTarget as Element | null], "cart");
 }
 
 function buyNow() {

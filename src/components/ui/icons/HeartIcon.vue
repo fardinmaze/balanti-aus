@@ -1,16 +1,24 @@
 <script setup lang="ts">
-const props = withDefaults(defineProps<{ class?: string; filled?: boolean }>(), {
-  class: "",
-  filled: false,
-});
+const props = withDefaults(
+  defineProps<{
+    class?: string;
+    filled?: boolean;
+    /** Fill with the surrounding text color instead of the wishlist red — e.g. the
+     *  header icon, which must follow the nav's white-over-hero / ink states. */
+    inheritColor?: boolean;
+  }>(),
+  { class: "", filled: false, inheritColor: false }
+);
+const fillColor = () => (props.inheritColor ? "currentColor" : "var(--wishlist)");
 </script>
 
 <template>
   <svg
     viewBox="0 0 24 24"
     :class="props.class"
-    :fill="props.filled ? 'currentColor' : 'none'"
-    stroke="currentColor"
+    :fill="props.filled ? fillColor() : 'none'"
+    :stroke="props.filled ? fillColor() : 'currentColor'"
+    class="transition-[fill,stroke] duration-[var(--dur-mid)] ease-[var(--ease)]"
     stroke-width="2"
     aria-hidden="true"
   >
