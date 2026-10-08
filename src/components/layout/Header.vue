@@ -47,11 +47,21 @@ onMounted(() => window.addEventListener("scroll", onScroll, { passive: true }));
 onBeforeUnmount(() => window.removeEventListener("scroll", onScroll));
 
 const isOverHero = computed(() => route.path === "/" && scrollY.value < SCROLL_THRESHOLD);
-const navTextClass = computed(() => (isOverHero.value ? "text-white" : "text-ink"));
-const headerBgClass = computed(() => (isOverHero.value ? "" : "bg-paper/95 backdrop-blur-sm"));
+const isScrolled = computed(() => scrollY.value >= SCROLL_THRESHOLD);
+// Over the hero the bar is see-through — except while a menu is open, where
+// white links over the video would be hard to read.
+const isTransparent = computed(() => isOverHero.value && !openItem.value && !menuOpen.value);
+const navTextClass = computed(() => (isTransparent.value ? "text-white" : "text-ink"));
+// Eased by the header's transition; the bottom hairline stays in every state.
+// Transparent only over the hero top — otherwise the original near-solid bar,
+// plus a soft shadow once the page has scrolled.
+const headerBgClass = computed(() => {
+  if (isTransparent.value) return "bg-transparent";
+  return ["bg-paper/95 backdrop-blur-sm", isScrolled.value ? "shadow-[var(--shadow-card)]" : ""];
+});
 // The logo PNG has no white variant — brightness-0 + invert turns its
 // (transparent-background) artwork into solid white while over the hero.
-const logoFilterClass = computed(() => (isOverHero.value ? "brightness-0 invert" : ""));
+const logoFilterClass = computed(() => (isTransparent.value ? "brightness-0 invert" : ""));
 
 // Primary nav mirrors whatever top-level categories the backend actually
 // has seeded (GET /site-api/top-categories) instead of a fixed Men/Women/
@@ -147,16 +157,19 @@ onBeforeUnmount(() => window.removeEventListener("keydown", onKeydown));
 
 <template>
   <header
-    class="top-navbar fixed inset-x-0 top-0 z-40 border-b border-line transition-colors duration-200"
+    class="top-navbar fixed inset-x-0 top-0 z-40 border-b border-line transition-[background-color,border-color,box-shadow,backdrop-filter] duration-[var(--dur-reveal)] ease-[var(--ease)]"
     :class="headerBgClass"
     @mouseleave="scheduleCloseMegaMenu"
   >
-    <div class="container flex h-[70px] xl:h-[76px] items-center justify-between gap-4" :class="navTextClass">
+    <div
+      class="container flex h-[70px] xl:h-[76px] items-center justify-between gap-4 transition-colors duration-[var(--dur-reveal)] ease-[var(--ease)]"
+      :class="navTextClass"
+    >
       <RouterLink to="/" class="inline-flex min-w-0 items-center" @click="closeMenu">
         <img
           src="/balanti-logo-11.png"
           :alt="brand.name"
-          class="w-28 transition-[filter] duration-200 md:w-32 lg:w-36"
+          class="w-28 transition-[filter] duration-[var(--dur-reveal)] ease-[var(--ease)] md:w-32 lg:w-36"
           :class="logoFilterClass"
         />
       </RouterLink>
