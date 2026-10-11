@@ -2,7 +2,7 @@
 import { computed } from "vue";
 import { RouterLink } from "vue-router";
 
-type Variant = "primary" | "ghost";
+type Variant = "primary" | "ghost" | "outline";
 
 const props = withDefaults(
   defineProps<{
@@ -16,11 +16,12 @@ const props = withDefaults(
 );
 
 const base =
-  "inline-flex min-h-[var(--tap-min)] items-center justify-center rounded-pill px-6 font-semibold transition-[transform,background,opacity] duration-[var(--dur-fast)] ease-[var(--ease)] active:translate-y-px disabled:opacity-50 disabled:pointer-events-none";
+  "inline-flex min-h-[var(--tap-min)] items-center justify-center rounded-pill px-6 font-semibold transition-[transform,background,color,opacity] duration-[var(--dur-fast)] ease-[var(--ease)] active:translate-y-px disabled:opacity-50 disabled:pointer-events-none";
 
 const variants: Record<Variant, string> = {
   primary: "bg-accent text-accent-contrast hover:opacity-90",
   ghost: "border border-ink text-ink bg-transparent hover:opacity-70",
+  outline: "border border-ink text-ink bg-transparent hover:bg-ink hover:text-paper!",
 };
 
 const classes = computed(() => `${base} ${variants[props.variant]} ${props.class}`);

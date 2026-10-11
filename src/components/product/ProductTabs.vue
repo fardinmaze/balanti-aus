@@ -3,6 +3,7 @@ import { ref } from "vue";
 import type { Product } from "@/types/product";
 import DeliveryIcon from "@/components/ui/icons/DeliveryIcon.vue";
 import ReturnIcon from "@/components/ui/icons/ReturnIcon.vue";
+import BaseButton from "@/components/ui/BaseButton.vue";
 
 defineProps<{ product: Product }>();
 
@@ -76,10 +77,10 @@ defineExpose({ openDetails });
       aria-labelledby="product-tab-delivery"
       class="pt-6"
     >
-      <RouterLink to="/support#policies" class="flex items-center gap-3 text-sm font-medium hover:text-muted">
-        <DeliveryIcon class="h-6 w-6 shrink-0" />
+      <BaseButton to="/support#policies" variant="outline" class="gap-3 text-sm">
+        <DeliveryIcon class="h-5 w-5 shrink-0" />
         Delivery Policy
-      </RouterLink>
+      </BaseButton>
     </div>
 
     <div
@@ -89,10 +90,10 @@ defineExpose({ openDetails });
       aria-labelledby="product-tab-return"
       class="pt-6"
     >
-      <RouterLink to="/support#policies" class="flex items-center gap-3 text-sm font-medium hover:text-muted">
-        <ReturnIcon class="h-6 w-6 shrink-0" />
+      <BaseButton to="/support#policies" variant="outline" class="gap-3 text-sm">
+        <ReturnIcon class="h-5 w-5 shrink-0" />
         Returns & Exchanges Policy
-      </RouterLink>
+      </BaseButton>
     </div>
   </div>
 </template>
