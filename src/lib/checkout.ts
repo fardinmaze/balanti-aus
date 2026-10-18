@@ -1,6 +1,7 @@
 import { computed } from "vue";
 import { useStore } from "@/store";
 import type { PlaceOrderPayload } from "@/api/checkout";
+import type { PlaceOrderResponse, StripeSessionStatus } from "@/api/types";
 
 /** Thin composable over the `checkout` Vuex module. */
 export function useCheckout() {
@@ -19,6 +20,30 @@ export function useCheckout() {
     fetchFreeDelivery: () => store.dispatch("checkout/fetchFreeDelivery"),
     validateCoupon: (couponCode: string, cartAmount: number) =>
       store.dispatch("checkout/validateCoupon", { coupon_code: couponCode, cart_amount: cartAmount }),
-    placeOrder: (payload: PlaceOrderPayload) => store.dispatch("checkout/placeOrder", payload),
+    placeOrder: (payload: PlaceOrderPayload) =>
+      store.dispatch("checkout/placeOrder", payload) as Promise<PlaceOrderResponse>,
+    fetchStripeSessionStatus: (sessionId: string) =>
+      store.dispatch("checkout/fetchStripeSessionStatus", sessionId) as Promise<StripeSessionStatus>,
   };
+}
+
+/** The Stripe order the browser was just sent off to pay — survives the round trip through Stripe's page. */
+export type PendingPayment = { orderId: string; sessionId: string };
+
+const PENDING_PAYMENT_KEY = "balanti-pending-payment";
+
+export function savePendingPayment(pending: PendingPayment) {
+  try {
+    sessionStorage.setItem(PENDING_PAYMENT_KEY, JSON.stringify(pending));
+  } catch {
+    /* storage unavailable — the confirmation page works off `?session_id` alone */
+  }
+}
+
+export function clearPendingPayment() {
+  try {
+    sessionStorage.removeItem(PENDING_PAYMENT_KEY);
+  } catch {
+    /* storage unavailable */
+  }
 }

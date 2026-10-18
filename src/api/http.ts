@@ -31,13 +31,16 @@ export class ApiError extends Error {
   code?: number;
   /** Present when the backend skipped the envelope and returned a raw DRF field-error dict (see guide §2.3). */
   fieldErrors?: FieldErrors;
+  /** Envelope `data` on an error response — e.g. place-order's `pricing` / `stock_errors` (guide §5.4). */
+  data?: unknown;
 
-  constructor(message: string, opts: { status: number; code?: number; fieldErrors?: FieldErrors }) {
+  constructor(message: string, opts: { status: number; code?: number; fieldErrors?: FieldErrors; data?: unknown }) {
     super(message);
     this.name = "ApiError";
     this.status = opts.status;
     this.code = opts.code;
     this.fieldErrors = opts.fieldErrors;
+    this.data = opts.data;
   }
 }
 
@@ -128,6 +131,7 @@ async function request<T>(method: string, path: string, options: RequestOptions 
         throw new ApiError(envelope.message ?? envelope.response ?? "Request failed.", {
           status: response.status,
           code: envelope.code,
+          data: envelope.data,
         });
       }
       return envelope;

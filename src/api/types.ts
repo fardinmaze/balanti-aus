@@ -174,8 +174,17 @@ export type LoginResult = {
   user_object: BackendCustomer;
 };
 
-export type ShippingMethod = { id: number; name: string; amount?: number; price?: number };
-export type PaymentMethod = { id: number; name: string; test_mode?: boolean };
+/** `charge` is the flat AUD amount the backend prices the order with (guide §5.4). */
+export type ShippingMethod = { id: number; name: string; charge?: number; status?: boolean };
+/** `gateway: "stripe"` = Stripe-hosted Checkout; `null` = offline (Cash on Delivery). Branch on this, never on `name`. */
+export type PaymentMethod = {
+  id: number;
+  name: string;
+  charge?: number;
+  gateway?: string | null;
+  test_mode?: boolean;
+  status?: boolean;
+};
 
 export type CustomerAddress = {
   id: number;
@@ -241,8 +250,17 @@ export type OrderSummary = {
   [extra: string]: unknown;
 };
 
+/** COD carries `items_created`/`failed_items`; a Stripe order carries `payment_url`/`session_id` instead. */
 export type PlaceOrderResponse = {
   order_id: string;
-  items_created: number;
-  failed_items: unknown[];
+  items_created?: number;
+  failed_items?: unknown[];
+  payment_url?: string;
+  session_id?: string;
+};
+
+export type StripeSessionStatus = {
+  status: "CREATED" | "PAID" | "FAILED" | "EXPIRED";
+  order_id: string;
+  total_amount: number;
 };

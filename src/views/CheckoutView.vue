@@ -1,15 +1,24 @@
 <script setup lang="ts">
 import { computed, reactive, ref, watch } from "vue";
-import { onMounted } from "vue";
-import { useRouter } from "vue-router";
+import { onBeforeUnmount, onMounted } from "vue";
+import { useRoute, useRouter } from "vue-router";
 import { useCart } from "@/lib/cart";
-import { useCheckout } from "@/lib/checkout";
+import { clearPendingPayment, savePendingPayment, useCheckout } from "@/lib/checkout";
+import {
+  computeOrderTotals,
+  parsePricingCorrection,
+  PRICE_MISMATCH_MESSAGE,
+  qualifiesForFreeDelivery,
+  type CouponRule,
+  type OrderTotals,
+  type PricingCorrection,
+} from "@/lib/pricing";
 import { useAuth } from "@/lib/auth";
 import { useAddress, addressLines } from "@/lib/address";
 import { ApiError } from "@/api/http";
 import type { AddressShape } from "@/api/address";
 import type { PlaceOrderPayload } from "@/api/checkout";
-import type { ShippingMethod } from "@/api/types";
+import type { PaymentMethod, ShippingMethod } from "@/api/types";
 import type { CartLine } from "@/store/modules/cart";
 import PlaceholderImage from "@/components/ui/PlaceholderImage.vue";
 import PriceTag from "@/components/ui/Price.vue";
@@ -27,7 +36,7 @@ onMounted(() => {
 });
 
 const couponCode = ref("");
-const couponApplied = ref<{ type: string; value: number } | null>(null);
+const couponApplied = ref<CouponRule | null>(null);
 const couponError = ref("");
 const couponLoading = ref(false);
 
@@ -52,49 +61,43 @@ function removeCoupon() {
   couponError.value = "";
 }
 
-const discountAmount = computed(() => {
-  if (!couponApplied.value) return 0;
-  const amount =
-    couponApplied.value.type.toLowerCase() === "percentage"
-      ? cart.subtotal.value * (couponApplied.value.value / 100)
-      : couponApplied.value.value;
-  return Math.min(amount, cart.subtotal.value);
-});
-
 // null (not 150, or any other guessed number) until GET /site-api/free-delivery
 // actually resolves — a stale/guessed default previously made carts between the
 // old and new threshold (e.g. $200-$400 vs a real $500 limit) wrongly qualify.
 const freeShippingThreshold = computed(() => checkout.freeDelivery.value?.amount ?? null);
-// Assessed on the order total after any coupon discount and before delivery
-// charges (Delivery Policy 5.2) — a coupon can push an order back under it.
-const qualifiesForFreeShipping = computed(() => {
-  if (freeShippingThreshold.value === null) return false;
-  if (cart.subtotal.value === 0) return true;
-  return cart.subtotal.value - discountAmount.value >= freeShippingThreshold.value;
-});
-
-const selectedShippingId = ref<number | null>(null);
-// Also re-runs when a coupon drops the order below the threshold, so a
-// paid method gets picked even if methods loaded while delivery was free.
-watch(
-  [() => checkout.shippingMethods.value, qualifiesForFreeShipping],
-  ([methods, isFree]) => {
-    if (!isFree && methods.length && selectedShippingId.value === null) {
-      selectedShippingId.value = methods[0].id;
-    }
-  }
+// Assessed on the subtotal before any coupon — the backend's rule for
+// `shipping_type: 0`, which it re-checks when the order is placed.
+const qualifiesForFreeShipping = computed(
+  () => cart.subtotal.value === 0 || qualifiesForFreeDelivery(cart.subtotal.value, freeShippingThreshold.value)
 );
 
-// Guests can't load real shipping methods (GET /shipping-methods requires a
-// Customer JWT and 401s for them) — flat fallback instead of silently
-// defaulting to $0/"Free" whenever no method is available to price from.
-const STATIC_DELIVERY_FEE = 15;
-const shippingAmount = computed(() => {
-  if (qualifiesForFreeShipping.value) return 0;
-  const method = checkout.shippingMethods.value.find((m: ShippingMethod) => m.id === selectedShippingId.value);
-  return method?.amount ?? method?.price ?? STATIC_DELIVERY_FEE;
-});
-const shippingType = computed(() => (qualifiesForFreeShipping.value ? 0 : (selectedShippingId.value ?? 0)));
+// Every method from the backend is offered, above the free-delivery threshold too
+// (its charge is just waived there).
+const deliveryMethods = computed(() => checkout.shippingMethods.value);
+
+const selectedShippingId = ref<number | null>(null);
+// Defaults to the first method that carries a delivery charge, so a $0 option
+// (e.g. "In Store Purchase") is only used when the shopper picks it. Immediate,
+// since methods are cached in the store and may already be loaded.
+watch(
+  deliveryMethods,
+  (methods) => {
+    if (!methods.length) return;
+    if (!methods.some((m: ShippingMethod) => m.id === selectedShippingId.value)) {
+      selectedShippingId.value = (methods.find((m: ShippingMethod) => (m.charge ?? 0) > 0) ?? methods[0]).id;
+    }
+  },
+  { immediate: true }
+);
+
+const selectedShipping = computed(() =>
+  deliveryMethods.value.find((m: ShippingMethod) => m.id === selectedShippingId.value)
+);
+const shippingCharge = computed(() => selectedShipping.value?.charge ?? 0);
+// The delivery method is always the one the shopper picked; free delivery only
+// zeroes the charge in the totals (lib/pricing.ts), it isn't a method of its own.
+const shippingType = computed(() => selectedShippingId.value ?? 0);
+const needsShippingMethod = computed(() => !selectedShipping.value);
 
 const selectedPaymentId = ref<number | null>(null);
 watch(
@@ -104,33 +107,69 @@ watch(
   },
   { immediate: true }
 );
+const selectedPayment = computed(() =>
+  checkout.paymentMethods.value.find((m: PaymentMethod) => m.id === selectedPaymentId.value)
+);
 
-// GET /site-api/vat-status → { vat, inclusive }. Inclusive: line.price already
-// carries GST, so it's just extracted for display/the order payload — nothing
-// is added to the total. Exclusive: line.price is ex-GST, so GST is computed
-// on top (using the store-wide vat % from vat-status, not the per-product
-// Product.vat field) and added to the total.
-const vatInclusive = computed(() => checkout.vat.value?.inclusive ?? true);
-const vatRate = computed(() => checkout.vat.value?.vat ?? 0);
-
-function lineVatRate(line: CartLine) {
-  return vatInclusive.value ? line.vat : vatRate.value;
+function isCardMethod(method: PaymentMethod | undefined) {
+  return method?.gateway === "stripe";
 }
 
+// Prices are GST-inclusive (guide §4/§5.4): GST is only extracted per line for
+// display and the order payload — never added on top of the total.
 function lineVatTotal(line: CartLine) {
-  if (vatInclusive.value) {
-    const rate = line.price / (1 + line.vat / 100);
-    return (line.price - rate) * line.qty;
-  }
-  return line.price * (vatRate.value / 100) * line.qty;
+  const rate = line.price / (1 + line.vat / 100);
+  return (line.price - rate) * line.qty;
 }
 
 const gstIncluded = computed(() => cart.lines.value.reduce((sum: number, line: CartLine) => sum + lineVatTotal(line), 0));
 
-const total = computed(() => {
-  const base = cart.subtotal.value - discountAmount.value + shippingAmount.value;
-  return vatInclusive.value ? base : base + gstIncluded.value;
+// What the shopper is shown, what goes in the payload, and what the
+// backend's own repricing must agree with to the cent (lib/pricing.ts).
+const computedTotals = computed(() =>
+  computeOrderTotals({
+    lines: cart.lines.value,
+    coupon: couponApplied.value,
+    freeDeliveryThreshold: freeShippingThreshold.value,
+    shippingCharge: shippingCharge.value,
+    paymentCharge: selectedPayment.value?.charge ?? 0,
+  })
+);
+
+// After a "total does not match" rejection, the backend's figures win — but
+// only while the order still looks exactly like the one it repriced.
+const pricingInputsKey = computed(() =>
+  JSON.stringify([
+    cart.lines.value.map((l: CartLine) => [l.itemId, l.size, l.qty, l.price]),
+    couponApplied.value,
+    shippingType.value,
+    selectedPaymentId.value,
+  ])
+);
+const priceCorrection = ref<{ key: string; pricing: PricingCorrection } | null>(null);
+const correctionActive = computed(() => priceCorrection.value?.key === pricingInputsKey.value);
+
+const totals = computed<OrderTotals>(() => {
+  const base = computedTotals.value;
+  if (!correctionActive.value) return base;
+  const p = priceCorrection.value!.pricing;
+  return {
+    ...base,
+    subtotal: p.subtotal ?? base.subtotal,
+    discount: p.discount ?? base.discount,
+    shipping: p.shipping ?? base.shipping,
+    paymentCharge: p.paymentCharge ?? base.paymentCharge,
+    total: p.total ?? base.total,
+  };
 });
+
+function applyPricingCorrection(data: unknown) {
+  const pricing = parsePricingCorrection(data);
+  if (!pricing) return;
+  for (const item of pricing.items) cart.setItemPrice(item.itemId, item.price);
+  // Keyed on the repriced cart, so editing the bag/coupon/method drops it.
+  priceCorrection.value = { key: pricingInputsKey.value, pricing };
+}
 
 // Guest checkout only — the backend reads `customer_data` solely when there's
 // no Authorization header (guide §5.4); logged-in orders carry an `address`
@@ -233,13 +272,37 @@ function inDaysIso(days: number) {
   return d.toISOString().slice(0, 10);
 }
 
+// Set synchronously on the first click — `checkout.placing` alone leaves a
+// gap before the disabled attribute renders, and a double click = two orders.
+const submitting = ref(false);
+const redirectingToPayment = ref(false);
+
+// Browser Back from Stripe's page can restore this page from the bfcache with
+// the button still locked — unlock it.
+function onPageShow(e: PageTransitionEvent) {
+  if (!e.persisted) return;
+  submitting.value = false;
+  redirectingToPayment.value = false;
+}
+onMounted(() => window.addEventListener("pageshow", onPageShow));
+onBeforeUnmount(() => window.removeEventListener("pageshow", onPageShow));
+
 async function placeOrder() {
+  if (submitting.value) return;
   formError.value = "";
   if (!deliveryComplete.value) {
     formError.value = "Fill in every delivery field before placing your order.";
     return;
   }
+  if (needsShippingMethod.value) {
+    formError.value = deliveryMethods.value.length
+      ? "Choose a delivery method before placing your order."
+      : "We couldn't load delivery options. Refresh the page and try again.";
+    return;
+  }
+  submitting.value = true;
   try {
+    const orderTotals = totals.value;
     const payload: PlaceOrderPayload = {
       order_data: {
         so_date: todayIso(),
@@ -253,19 +316,19 @@ async function placeOrder() {
         delivery_note: deliveryNote.value.trim(),
         discount_type: couponApplied.value?.type ?? null,
         discount_value: couponApplied.value?.value ?? 0,
-        discount_amount: discountAmount.value,
-        shipping_value: shippingAmount.value,
-        shipping_amount: shippingAmount.value,
-        payment_value: total.value,
-        payment_amount: total.value,
+        discount_amount: orderTotals.discount,
+        shipping_value: orderTotals.shipping,
+        shipping_amount: orderTotals.shipping,
+        payment_value: orderTotals.paymentCharge,
+        payment_amount: orderTotals.paymentCharge,
         adjustment: 0,
-        subtotal: cart.subtotal.value,
-        total: total.value,
+        subtotal: orderTotals.subtotal,
+        total: orderTotals.total,
         cart_items: cart.lines.value.map((line: CartLine) => ({
           item_id: line.itemId,
           quantity: line.qty,
           product_price: line.price,
-          vat: lineVatRate(line),
+          vat: line.vat,
           vat_total: lineVatTotal(line),
           ...(line.colorId != null ? { color: line.colorId } : {}),
           ...(line.sizeId != null ? { size: line.sizeId } : {}),
@@ -303,18 +366,57 @@ async function placeOrder() {
 
     const result = await checkout.placeOrder(payload);
 
+    // Stripe: the order now exists as PENDING_PAYMENT. Keep the bag — it's only
+    // cleared once the confirmation page sees the payment as PAID.
+    if (result.payment_url) {
+      savePendingPayment({ orderId: result.order_id, sessionId: result.session_id ?? "" });
+      redirectingToPayment.value = true;
+      window.location.assign(result.payment_url);
+      return;
+    }
+
+    // No payment_url: an offline (Cash on Delivery) order — done.
     const orderId = result.order_id;
-    const orderTotal = total.value;
     cart.clear();
+    submitting.value = false;
 
     router.push({
       name: "checkout-confirmation",
-      query: { order: orderId, total: orderTotal.toFixed(0) },
+      query: { order: orderId, total: orderTotals.total.toFixed(0) },
     });
   } catch (e) {
+    submitting.value = false;
+    if (e instanceof ApiError && e.message.startsWith(PRICE_MISMATCH_MESSAGE)) {
+      applyPricingCorrection(e.data);
+    }
     formError.value = e instanceof ApiError ? e.message : "Something went wrong placing your order.";
   }
 }
+
+// Stripe's cancel URL (`/checkout?cancelled=1`) — nothing was charged and the
+// bag is untouched; placing the order again creates a fresh one.
+const route = useRoute();
+const paymentCancelled = computed(() => route.query.cancelled === "1");
+watch(
+  paymentCancelled,
+  (cancelled) => {
+    if (cancelled) clearPendingPayment();
+  },
+  { immediate: true }
+);
+function dismissCancelled() {
+  router.replace({ query: {} });
+}
+
+const formatAud = (amount: number) =>
+  new Intl.NumberFormat("en-AU", { style: "currency", currency: "AUD" }).format(amount);
+
+const placeOrderLabel = computed(() => {
+  if (redirectingToPayment.value) return "Redirecting to secure payment…";
+  if (submitting.value || checkout.placing.value) return "Placing order…";
+  const verb = isCardMethod(selectedPayment.value) ? "Pay" : "Place Order";
+  return `${verb} — ${formatAud(totals.value.total)}`;
+});
 
 const fieldClass =
   "min-h-[52px] w-full rounded-md border border-line bg-surface px-4 text-sm placeholder:text-muted";
@@ -323,6 +425,15 @@ const fieldClass =
 <template>
   <section class="!pt-10 sm:!pt-14">
     <div class="container">
+      <div
+        v-if="paymentCancelled"
+        class="mx-auto mb-8 flex max-w-2xl items-start justify-between gap-4 rounded-md border border-line bg-surface px-4 py-3 text-sm"
+        role="status"
+      >
+        <p><span class="font-semibold">Payment cancelled.</span> You have not been charged.</p>
+        <button type="button" class="shrink-0 underline" @click="dismissCancelled">Dismiss</button>
+      </div>
+
       <div v-if="cart.lines.value.length === 0" class="max-w-md text-center sm:mx-auto">
         <h1>Your bag is empty</h1>
         <p class="mt-2 text-muted">Add a pair before checking out.</p>
@@ -494,6 +605,74 @@ const fieldClass =
                 </div>
               </div>
             </div>
+
+            <!-- Delivery method — at or above the free-delivery threshold the charge is waived in the totals -->
+            <div class="mt-10">
+              <h2 class="font-display text-xl font-semibold">Delivery Method</h2>
+              <p
+                v-if="qualifiesForFreeShipping && cart.subtotal.value > 0"
+                class="mt-3 rounded-md bg-surface px-4 py-3 text-sm font-semibold"
+                role="status"
+              >
+                You've got free delivery on this order.
+              </p>
+              <div v-if="deliveryMethods.length" class="mt-3 space-y-3">
+                <label
+                  v-for="method in deliveryMethods"
+                  :key="method.id"
+                  class="flex cursor-pointer items-center gap-3 rounded-md border p-4 text-sm"
+                  :class="selectedShippingId === method.id ? 'border-ink' : 'border-line'"
+                >
+                  <input
+                    v-model="selectedShippingId"
+                    type="radio"
+                    name="shippingMethod"
+                    :value="method.id"
+                    class="h-4 w-4 accent-[var(--ink)]"
+                  />
+                  <span class="flex flex-1 items-center justify-between gap-2 font-semibold">
+                    <span>{{ method.name }}</span>
+                    <PriceTag :amount="method.charge ?? 0" class="font-normal" />
+                  </span>
+                </label>
+                <p v-if="freeShippingThreshold && !qualifiesForFreeShipping" class="text-xs text-muted">
+                  Free delivery on orders of <PriceTag :amount="freeShippingThreshold" /> or more.
+                </p>
+              </div>
+              <p v-else-if="checkout.configLoaded.value" class="mt-3 text-sm text-sale" role="alert">
+                We couldn't load delivery options. Refresh the page and try again.
+              </p>
+            </div>
+
+            <!-- Payment — Stripe vs offline is decided by `gateway`, never by name -->
+            <div v-if="checkout.paymentMethods.value.length" class="mt-10">
+              <h2 class="font-display text-xl font-semibold">Payment</h2>
+              <div class="mt-3 space-y-3">
+                <label
+                  v-for="method in checkout.paymentMethods.value"
+                  :key="method.id"
+                  class="flex cursor-pointer items-start gap-3 rounded-md border p-4 text-sm"
+                  :class="selectedPaymentId === method.id ? 'border-ink' : 'border-line'"
+                >
+                  <input
+                    v-model="selectedPaymentId"
+                    type="radio"
+                    name="paymentMethod"
+                    :value="method.id"
+                    class="mt-1 h-4 w-4 accent-[var(--ink)]"
+                  />
+                  <span class="flex-1">
+                    <span class="flex items-center justify-between gap-2 font-semibold">
+                      <span>{{ isCardMethod(method) ? "Pay by card" : method.name }}</span>
+                      <PriceTag v-if="method.charge" :amount="method.charge" class="font-normal" />
+                    </span>
+                    <span v-if="isCardMethod(method)" class="block text-muted">
+                      You'll be taken to Stripe's secure page to pay. We never see your card details.
+                    </span>
+                  </span>
+                </label>
+              </div>
+            </div>
           </div>
 
           <aside class="order-1 h-fit lg:order-2">
@@ -525,44 +704,47 @@ const fieldClass =
             <div class="mt-4 space-y-2 text-sm">
               <div class="flex justify-between">
                 <span>Subtotal</span>
-                <PriceTag :amount="cart.subtotal.value" />
+                <PriceTag :amount="totals.subtotal" />
               </div>
-              <div v-if="couponApplied" class="flex justify-between">
+              <div v-if="couponApplied || totals.discount > 0" class="flex justify-between">
                 <span>Discount</span>
-                <span>-<PriceTag :amount="discountAmount" /></span>
+                <span>-<PriceTag :amount="totals.discount" /></span>
               </div>
-              
+
               <div class="flex justify-between">
                 <span>Delivery</span>
-                <span v-if="shippingAmount === 0">Free</span>
-                <PriceTag v-else :amount="shippingAmount" />
+                <PriceTag :amount="totals.shipping" />
               </div>
-              
-              <div v-if="!vatInclusive" class="flex justify-between">
-                <span>GST</span>
-                <PriceTag :amount="gstIncluded" />
+
+              <div v-if="totals.paymentCharge > 0" class="flex justify-between">
+                <span>Payment fee</span>
+                <PriceTag :amount="totals.paymentCharge" />
               </div>
+
               <div class="flex justify-between border-t border-line pt-2 text-base font-semibold">
                 <span>Total</span>
-                <PriceTag :amount="total" />
+                <PriceTag :amount="totals.total" />
               </div>
-              <p v-if="vatInclusive" class="text-xs text-muted">Includes <PriceTag :amount="gstIncluded" /> GST</p>
+              <p class="text-xs text-muted">Includes <PriceTag :amount="gstIncluded" /> GST</p>
             </div>
 
+            <p v-if="correctionActive" class="mt-4 rounded-md bg-surface px-4 py-3 text-sm" role="status">
+              Prices have changed since you added these items. Your bag now shows the current prices — check the
+              total above, then place your order again.
+            </p>
             <p v-if="formError" class="mt-4 text-sm text-sale" role="alert">{{ formError }}</p>
 
             <button
               type="button"
               class="mt-4 min-h-[var(--tap-min)] w-full rounded-pill bg-accent px-6 text-sm font-semibold !text-white transition-opacity hover:opacity-90 disabled:opacity-60"
-              :disabled="checkout.placing.value"
+              :disabled="submitting || checkout.placing.value"
               @click="placeOrder"
             >
-              {{ checkout.placing.value ? "Placing order…" : `Place Order — ${new Intl.NumberFormat("en-AU", { style: "currency", currency: "AUD" }).format(total)}` }}
+              {{ placeOrderLabel }}
             </button>
 
             <div class="mt-5 border-t border-line pt-5">
-              <p v-if="shippingAmount === 0" class="text-sm font-semibold">Free shipping — arrives in 3–5 business days</p>
-              <p v-else class="text-sm font-semibold">Standard delivery — arrives in 3–5 business days</p>
+              <p class="text-sm font-semibold">Standard delivery — arrives in 3–5 business days</p>
 
               <ul class="mt-4 space-y-4">
                 <li v-for="line in cart.lines.value" :key="`${line.handle}-${line.size}`" class="flex gap-3">

@@ -134,6 +134,21 @@ function isCancelled(order: OrderSummary) {
   return /cancel|fail|refund|reject/i.test(order.status ?? "");
 }
 
+// Stripe-era statuses get friendly labels; anything else keeps the raw (lower-cased, capitalized) status.
+const STATUS_LABELS: Record<string, string> = {
+  PENDING_PAYMENT: "Awaiting payment",
+  CONFIRMED: "Paid / Confirmed",
+  CANCELLED: "Cancelled",
+};
+
+function statusLabel(order: OrderSummary) {
+  return STATUS_LABELS[order.status ?? ""] ?? (order.status ?? "").toLowerCase();
+}
+
+function isAwaitingPayment(order: OrderSummary) {
+  return order.status === "PENDING_PAYMENT";
+}
+
 function statusClass(order: OrderSummary) {
   if (isCancelled(order)) return "bg-sale/10 text-sale";
   if (order.received || /deliver|complete/i.test(order.status ?? "")) return "bg-success/10 text-success";
@@ -473,13 +488,13 @@ function logout() {
               <div class="flex flex-wrap items-center justify-between gap-2">
                 <span
                   v-if="order.status"
-                  class="inline-block rounded-pill px-2 py-0.5 text-xs font-semibold capitalize"
-                  :class="statusClass(order)"
+                  class="inline-block rounded-pill px-2 py-0.5 text-xs font-semibold"
+                  :class="[statusClass(order), { capitalize: !STATUS_LABELS[order.status] }]"
                 >
-                  {{ order.status.toLowerCase() }}
+                  {{ statusLabel(order) }}
                 </span>
                 <span
-                  v-if="!order.received && !isCancelled(order) && order.expected_delivery"
+                  v-if="!order.received && !isCancelled(order) && !isAwaitingPayment(order) && order.expected_delivery"
                   class="flex items-center gap-1 text-xs text-muted"
                 >
                   <DeliveryIcon class="size-3.5" />
@@ -518,13 +533,13 @@ function logout() {
                 <td class="px-4 py-3 align-top">
                   <span
                     v-if="order.status"
-                    class="inline-block rounded-pill px-2 py-0.5 text-xs font-semibold capitalize"
-                    :class="statusClass(order)"
+                    class="inline-block rounded-pill px-2 py-0.5 text-xs font-semibold"
+                    :class="[statusClass(order), { capitalize: !STATUS_LABELS[order.status] }]"
                   >
-                    {{ order.status.toLowerCase() }}
+                    {{ statusLabel(order) }}
                   </span>
                   <span
-                    v-if="!order.received && !isCancelled(order) && order.expected_delivery"
+                    v-if="!order.received && !isCancelled(order) && !isAwaitingPayment(order) && order.expected_delivery"
                     class="mt-1 flex items-center gap-1 whitespace-nowrap text-xs text-muted"
                   >
                     <DeliveryIcon class="size-3.5" />

@@ -18,6 +18,7 @@ export function useCart() {
       store.dispatch("cart/addItem", { product, sizeValue, qty, variant }),
     removeItem: (handle: string, size: string) => store.dispatch("cart/removeItem", { handle, size }),
     updateQty: (handle: string, size: string, qty: number) => store.dispatch("cart/updateQty", { handle, size, qty }),
+    setItemPrice: (itemId: number, price: number) => store.commit("cart/setItemPrice", { itemId, price }),
     clear: () => store.dispatch("cart/clear"),
     openCart: () => store.dispatch("cart/open"),
     closeCart: () => store.dispatch("cart/close"),

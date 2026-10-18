@@ -19,7 +19,7 @@ export const faqSections: FaqSection[] = [
       {
         q: "How do I pay for my order?",
         a: [
-          "Balanti does not currently accept Cash on Delivery (COD). We accept payment through our secure online payment gateway only, including credit/debit cards and digital wallets.",
+          "Balanti currently do NOT accepts Cash on Delivery (COD). Only accepted payment getaway policy (Online purchase). Payment methods (like credit/debit cards and digital wallets) is available and which is fully secured.",
         ],
       },
       {

@@ -1,5 +1,5 @@
 import { http } from "./http";
-import type { PaymentMethod, PlaceOrderResponse, ShippingMethod } from "./types";
+import type { PaymentMethod, PlaceOrderResponse, ShippingMethod, StripeSessionStatus } from "./types";
 
 export type VatStatus = { vat: number; inclusive: boolean };
 export type FreeDelivery = { amount: number };
@@ -59,6 +59,14 @@ export const checkoutApi = {
   freeDelivery: () => http.get<FreeDelivery>("/site-api/free-delivery", { auth: false }).then((e) => e.data!),
   offerStatus: () => http.get<OfferStatus>("/site-api/offer-status", { auth: false }).then((e) => e.data!),
   shippingMethods: () => http.get<ShippingMethod[]>("/site-api/shipping-methods").then((e) => e.data ?? []),
+  /**
+   * Same rows as /shipping-methods but Public — guests 401 on the main one, and
+   * without a real method id a below-threshold guest order can only be sent as
+   * Free Delivery, which the backend rejects. Swap back to /shipping-methods
+   * for everyone once the backend makes it public.
+   */
+  shippingMethodsPublic: () =>
+    http.get<ShippingMethod[]>("/site-api/shipping-methods/source", { auth: false }).then((e) => e.data ?? []),
   paymentMethods: () => http.get<PaymentMethod[]>("/site-api/payment-methods", { auth: false }).then((e) => e.data ?? []),
 
   validateCoupon: (coupon_code: string, cart_amount: number) =>
@@ -67,4 +75,10 @@ export const checkoutApi = {
   /** Guest + logged-in storefront checkout — use this one, not /place-order (guide §5.4). */
   placeOrder: (payload: PlaceOrderPayload) =>
     http.post<PlaceOrderResponse>("/site-api/place-order/web-front", { body: payload, auth: false }).then((e) => e.data!),
+
+  /** Public. Read-only — safe to call repeatedly (confirmation page polls it). */
+  stripeSessionStatus: (session_id: string) =>
+    http
+      .get<StripeSessionStatus>("/site-api/stripe/session-status", { query: { session_id }, auth: false })
+      .then((e) => e.data!),
 };

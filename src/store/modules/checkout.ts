@@ -68,19 +68,13 @@ export const checkout: Module<CheckoutState, RootState> = {
     },
   },
   actions: {
-    /**
-     * Loads storefront-wide checkout config. Shipping methods require a
-     * Customer JWT in the current backend routing (guide §5.4/§8) — for a
-     * guest that call 401s, which we swallow: free-delivery (shipping_type
-     * 0) still works without the list, guests just won't see paid options.
-     */
-    /** Just the free-delivery threshold — cheap enough to load app-wide for marketing badges, without the rest of fetchConfig's bundle (which 401s the guest shipping-methods call every time). */
+    /** Just the free-delivery threshold — cheap enough to load app-wide for marketing badges, without the rest of fetchConfig's bundle. */
     async fetchFreeDelivery({ commit, state }) {
       if (state.freeDelivery !== null) return;
       commit("setFreeDelivery", await checkoutApi.freeDelivery());
     },
 
-    async fetchConfig({ commit, state }) {
+    async fetchConfig({ commit, state, rootGetters }) {
       if (state.configLoaded) return;
       const [vat, freeDelivery, offerStatus, paymentMethods] = await Promise.all([
         checkoutApi.vatStatus(),
@@ -93,17 +87,31 @@ export const checkout: Module<CheckoutState, RootState> = {
       commit("setOfferStatus", offerStatus);
       commit("setPaymentMethods", paymentMethods);
 
+      // Guests can't call /shipping-methods (Customer JWT) — they get the public
+      // variant, as does a signed-in shopper whose token the backend rejects.
+      let shippingMethods: ShippingMethod[] = [];
       try {
-        commit("setShippingMethods", await checkoutApi.shippingMethods());
+        shippingMethods = rootGetters["auth/isAuthenticated"]
+          ? await checkoutApi.shippingMethods()
+          : await checkoutApi.shippingMethodsPublic();
       } catch {
-        commit("setShippingMethods", []);
+        try {
+          shippingMethods = await checkoutApi.shippingMethodsPublic();
+        } catch {
+          shippingMethods = [];
+        }
       }
+      commit("setShippingMethods", shippingMethods);
 
       commit("setConfigLoaded", true);
     },
 
     async validateCoupon(_ctx, { coupon_code, cart_amount }: { coupon_code: string; cart_amount: number }) {
       return checkoutApi.validateCoupon(coupon_code, cart_amount);
+    },
+
+    async fetchStripeSessionStatus(_ctx, sessionId: string) {
+      return checkoutApi.stripeSessionStatus(sessionId);
     },
 
     async placeOrder({ commit }, payload: PlaceOrderPayload) {

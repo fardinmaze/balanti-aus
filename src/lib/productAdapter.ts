@@ -1,4 +1,5 @@
 import { resolveMediaUrl } from "@/api/http";
+import { isOnSale } from "@/lib/pricing";
 import type { BackendProduct, BackendProductCategoryRef, BackendProductImage, BackendProductVariation } from "@/api/types";
 import type { ColorOption, ColorPhoto, Product, ProductAttributeItem, ProductCategory, Size, SizeOption, StockVariation } from "@/types/product";
 
@@ -125,7 +126,7 @@ function adaptAttributeItems(product: BackendProduct): ProductAttributeItem[] {
 
 export function adaptProduct(product: BackendProduct): Product {
   const colorway = product.colorway ?? product.color ?? "";
-  const onSale = Boolean(product.on_sale) && typeof product.offer_price === "number" && product.offer_price < product.sell_price;
+  const onSale = isOnSale(product.on_sale, product.sell_price, product.offer_price);
   const images = adaptImages(product);
   const thumbnails = adaptThumbnails(product);
 

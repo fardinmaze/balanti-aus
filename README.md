@@ -32,7 +32,7 @@ src/
 
 ## Current status (see `../WORKPLAN.md`)
 
-- Checkout is a **simulated payment gateway** — no real processor is wired in. `CheckoutView.vue` fakes a network round trip and generates a demo order ID; nothing is charged or transmitted.
+- Checkout pays by card through **Stripe-hosted Checkout** (see `STRIPE_FRONTEND_GUIDE.md`): a payment method with `gateway: "stripe"` redirects to Stripe's `payment_url`, and `ConfirmationView.vue` polls `/site-api/stripe/session-status` until the order is `PAID`/`FAILED`/`EXPIRED`. Offline methods (`gateway: null`) place the order directly. All order maths lives in `src/lib/pricing.ts`, which mirrors the backend's repricing to the cent. The dev server is pinned to port 5173 because the backend's Stripe redirect URLs point there.
 - Product photography doesn't exist yet — `PlaceholderImage.vue` renders an art-directed tone swatch per angle instead of a real photo or stock image.
 - The waitlist form (`Newsletter.vue`) is not wired to a real email service.
-- Before a real launch: pick a payment processor (Stripe/Afterpay), wire a real ESP for the waitlist, replace placeholder imagery, and add Privacy/Terms pages.
+- Before a real launch: wire a real ESP for the waitlist, replace placeholder imagery, and add Privacy/Terms pages.

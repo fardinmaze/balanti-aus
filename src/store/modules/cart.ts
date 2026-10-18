@@ -1,5 +1,6 @@
 import type { Module } from "vuex";
 import type { Product } from "@/types/product";
+import { subtotalOf, unitPrice } from "@/lib/pricing";
 import type { RootState } from "../types";
 
 const STORAGE_KEY = "balanti-cart";
@@ -69,6 +70,10 @@ export const cart: Module<CartState, RootState> = {
       const line = state.lines.find((l) => l.handle === handle && l.size === size);
       if (line) line.qty = qty;
     },
+    /** Reprices every line of a backend product row — used when place-order rejects a stale price (guide §5.4 `data.pricing`). */
+    setItemPrice(state, { itemId, price }: { itemId: number; price: number }) {
+      for (const line of state.lines) if (line.itemId === itemId) line.price = price;
+    },
     clear(state) {
       state.lines = [];
     },
@@ -102,7 +107,7 @@ export const cart: Module<CartState, RootState> = {
         sizeId,
         name: product.name,
         sku: product.sku,
-        price: product.onSale && product.offerPrice != null ? product.offerPrice : product.price,
+        price: unitPrice(product),
         vat: product.vat,
         colorway: product.colorway,
         tone: product.tone,
@@ -134,7 +139,7 @@ export const cart: Module<CartState, RootState> = {
     lines: (state) => state.lines,
     isOpen: (state) => state.isOpen,
     count: (state) => state.lines.reduce((n, l) => n + l.qty, 0),
-    subtotal: (state) => state.lines.reduce((sum, l) => sum + l.price * l.qty, 0),
+    subtotal: (state) => subtotalOf(state.lines),
   },
 };
 
