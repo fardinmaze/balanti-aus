@@ -95,7 +95,7 @@ const selectedShipping = computed(() =>
 );
 const shippingCharge = computed(() => selectedShipping.value?.charge ?? 0);
 // The delivery method is always the one the shopper picked; free delivery only
-// zeroes the charge in the totals (lib/pricing.ts), it isn't a method of its own.
+// zeroes its charge in the totals (lib/pricing.ts), it isn't a method of its own.
 const shippingType = computed(() => selectedShippingId.value ?? 0);
 const needsShippingMethod = computed(() => !selectedShipping.value);
 
@@ -146,12 +146,15 @@ const pricingInputsKey = computed(() =>
     selectedPaymentId.value,
   ])
 );
-const priceCorrection = ref<{ key: string; pricing: PricingCorrection } | null>(null);
+const priceCorrection = ref<{ key: string; pricing: PricingCorrection; pricesChanged: boolean } | null>(null);
 const correctionActive = computed(() => priceCorrection.value?.key === pricingInputsKey.value);
 
 const totals = computed<OrderTotals>(() => {
   const base = computedTotals.value;
-  if (!correctionActive.value) return base;
+  // Free delivery is checked first and always wins: at or above the threshold
+  // delivery is $0, even if a rejected order came back with a delivery charge.
+  // The corrected item prices are already in the cart, so `base` reflects them.
+  if (!correctionActive.value || base.freeDelivery) return base;
   const p = priceCorrection.value!.pricing;
   return {
     ...base,
@@ -166,10 +169,16 @@ const totals = computed<OrderTotals>(() => {
 function applyPricingCorrection(data: unknown) {
   const pricing = parsePricingCorrection(data);
   if (!pricing) return;
+  const pricesChanged = pricing.items.some((item) =>
+    cart.lines.value.some((l: CartLine) => l.itemId === item.itemId && l.price !== item.price)
+  );
   for (const item of pricing.items) cart.setItemPrice(item.itemId, item.price);
   // Keyed on the repriced cart, so editing the bag/coupon/method drops it.
-  priceCorrection.value = { key: pricingInputsKey.value, pricing };
+  priceCorrection.value = { key: pricingInputsKey.value, pricing, pricesChanged };
 }
+
+// Only claim "prices have changed" when an item's price actually did.
+const showPriceChangeNotice = computed(() => correctionActive.value && priceCorrection.value!.pricesChanged);
 
 // Guest checkout only — the backend reads `customer_data` solely when there's
 // no Authorization header (guide §5.4); logged-in orders carry an `address`
@@ -388,6 +397,10 @@ async function placeOrder() {
     submitting.value = false;
     if (e instanceof ApiError && e.message.startsWith(PRICE_MISMATCH_MESSAGE)) {
       applyPricingCorrection(e.data);
+      if (totals.value.freeDelivery && !priceCorrection.value?.pricesChanged) {
+        formError.value = "We couldn't place your order with free delivery. Please try again shortly or contact us.";
+        return;
+      }
     }
     formError.value = e instanceof ApiError ? e.message : "Something went wrong placing your order.";
   }
@@ -632,7 +645,7 @@ const fieldClass =
                   />
                   <span class="flex flex-1 items-center justify-between gap-2 font-semibold">
                     <span>{{ method.name }}</span>
-                    <PriceTag :amount="method.charge ?? 0" class="font-normal" />
+                    <PriceTag :amount="qualifiesForFreeShipping ? 0 : (method.charge ?? 0)" class="font-normal" />
                   </span>
                 </label>
                 <p v-if="freeShippingThreshold && !qualifiesForFreeShipping" class="text-xs text-muted">
@@ -728,7 +741,7 @@ const fieldClass =
               <p class="text-xs text-muted">Includes <PriceTag :amount="gstIncluded" /> GST</p>
             </div>
 
-            <p v-if="correctionActive" class="mt-4 rounded-md bg-surface px-4 py-3 text-sm" role="status">
+            <p v-if="showPriceChangeNotice" class="mt-4 rounded-md bg-surface px-4 py-3 text-sm" role="status">
               Prices have changed since you added these items. Your bag now shows the current prices — check the
               total above, then place your order again.
             </p>
